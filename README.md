@@ -8,6 +8,8 @@ There are some improvements to do yet, like:
 - It generates only one month for the load files (you can choose the month); 
 - It doesn't generates the "linecode" files and the "profiles" files for the loads (as I use a fixed files for all feeders, but Im including these in this version).
 
+The project uses one external dll (EPPlus in lib directory) that allows Excel files to be read in the C#. 
+
 Feel free to make contact if this project have some use for you or your company.
 Ezequiel
 
