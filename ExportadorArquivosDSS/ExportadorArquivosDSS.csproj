@@ -32,9 +32,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Auxiliares">
-      <HintPath>lib\Auxiliares.dll</HintPath>
-    </Reference>
     <Reference Include="EPPlus">
       <HintPath>lib\EPPlus.dll</HintPath>
     </Reference>
