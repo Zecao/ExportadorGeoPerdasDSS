@@ -32,8 +32,11 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Auxiliares">
+      <HintPath>..\ExecutorOpenDSS\Bibliotecas\Auxiliares.dll</HintPath>
+    </Reference>
     <Reference Include="EPPlus">
-      <HintPath>lib\EPPlus.dll</HintPath>
+      <HintPath>..\ExecutorOpenDSS\bin\Debug\EPPlus.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -44,21 +47,25 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ClassesAuxiliares\AlimentadoresCemig.cs" />
-    <Compile Include="ClassesAuxiliares\ArqManip.cs" />
-    <Compile Include="ClassesAuxiliares\LeXLSX.cs" />
-    <Compile Include="ExportadorArqDSS.cs" />
-    <Compile Include="Principais\AuxFunc.cs" />
-    <Compile Include="Principais\ChaveMT.cs" />
-    <Compile Include="Principais\CapacitorMT.cs" />
-    <Compile Include="Principais\CargaMT.cs" />
-    <Compile Include="Principais\CargaBT.cs" />
-    <Compile Include="Principais\ModeloSDEE.cs" />
-    <Compile Include="Principais\RamalBT.cs" />
-    <Compile Include="Principais\SegmentoBT.cs" />
-    <Compile Include="Principais\Trafo.cs" />
-    <Compile Include="Principais\Regulador.cs" />
-    <Compile Include="Principais\SegmentoMT.cs" />
+    <Compile Include="MainClasses\CircMT.cs" />
+    <Compile Include="MainClasses\StrBoolElementosSDE.cs" />
+    <Compile Include="MainClasses\GeradorMT.cs" />
+    <Compile Include="AuxClasses\CemigFeeders.cs" />
+    <Compile Include="AuxClasses\ArqManip.cs" />
+    <Compile Include="AuxClasses\XLSXFile.cs" />
+    <Compile Include="GeoPerdas2DSSFiles.cs" />
+    <Compile Include="MainClasses\AuxFunc.cs" />
+    <Compile Include="MainClasses\ChaveMT.cs" />
+    <Compile Include="MainClasses\CapacitorMT.cs" />
+    <Compile Include="MainClasses\CargaMT.cs" />
+    <Compile Include="MainClasses\CargaBT.cs" />
+    <Compile Include="MainClasses\Param.cs" />
+    <Compile Include="MainClasses\ModeloSDEE.cs" />
+    <Compile Include="MainClasses\RamalBT.cs" />
+    <Compile Include="MainClasses\SegmentoBT.cs" />
+    <Compile Include="MainClasses\Trafo.cs" />
+    <Compile Include="MainClasses\Regulador.cs" />
+    <Compile Include="MainClasses\SegmentoMT.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
