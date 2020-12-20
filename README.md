@@ -6,9 +6,11 @@ The GeoPerdasANEEL is a database created from another database know as BDGD whic
 Advantages of using this project: 
 - faster .dss files creation, e.g. it takes 40 minutes to create 1700 feeders X 18 hours using a commercial ETL tool.
 - alternative of using the ANEEL software GeoPerdas.EXE. 
+- addition of some customizations that do not exist in ANEEL .dss files, such as: capacitor files, alternative to the ANEEL load model and modeling of reclosers and fuses. Of course, those informations must also be avaiable in GeoPerdas database, through extensions of the original database.
 
 There are some improvements to do yet, like:
 - It doesn't generates the "linecode" files and the load profiles files. As I use a fixed files for all feeders,  I've included these files in FeederExample directory.
+- Addition of the SQL Scripts to extend the original GeoPerdas database (e.g. recolosers and fuse modelling and capacitor table).  
 
 The project also uses one external dll (EPPlus in lib directory) that allows Excel files to be read in the C#. 
 
