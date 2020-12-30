@@ -2,7 +2,7 @@
 using System.Data.SqlClient;
 using System.Text;
 
-namespace ConsoleApplication2.Principais
+namespace ExportadorGeoPerdasDSS
 {
     class Regulador
     {
@@ -178,10 +178,10 @@ namespace ConsoleApplication2.Principais
 
         internal void GravaEmArquivo()
         {
-            ExecutorOpenDSS.ArqManip.SafeDelete(GetNomeArq());
+            ArqManip.SafeDelete(GetNomeArq());
 
             // grava em arquivo
-            ExecutorOpenDSS.ArqManip.GravaEmArquivo(_arqReguladorMT.ToString(), GetNomeArq());
+            ArqManip.GravaEmArquivo(_arqReguladorMT.ToString(), GetNomeArq());
         }
 
         private string GetNomeArq()
