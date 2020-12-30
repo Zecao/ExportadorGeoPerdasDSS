@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ConsoleApplication2.Principais
+namespace ExportadorGeoPerdasDSS
 {
     class CapacitorMT
     {
@@ -131,10 +131,10 @@ namespace ConsoleApplication2.Principais
 
         internal void GravaEmArquivo()
         {
-            ExecutorOpenDSS.ArqManip.SafeDelete(GetNomeArq());
+            ArqManip.SafeDelete(GetNomeArq());
 
             // grava em arquivo
-            ExecutorOpenDSS.ArqManip.GravaEmArquivo(_arqCapacitor.ToString(), GetNomeArq());
+            ArqManip.GravaEmArquivo(_arqCapacitor.ToString(), GetNomeArq());
         }
     }
 }
