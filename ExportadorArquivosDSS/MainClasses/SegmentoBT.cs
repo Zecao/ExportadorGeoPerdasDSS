@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace ConsoleApplication2.Principais
+namespace ExportadorGeoPerdasDSS
 {
     class SegmentoBT
     {
@@ -91,9 +88,9 @@ namespace ConsoleApplication2.Principais
 
         internal void GravaEmArquivo()
         {
-            ExecutorOpenDSS.ArqManip.SafeDelete(GetNomeArq());
+            ArqManip.SafeDelete(GetNomeArq());
 
-            ExecutorOpenDSS.ArqManip.GravaEmArquivo(_arqSegmentoBT.ToString(), GetNomeArq());
+            ArqManip.GravaEmArquivo(_arqSegmentoBT.ToString(), GetNomeArq());
         }
     }
 }
