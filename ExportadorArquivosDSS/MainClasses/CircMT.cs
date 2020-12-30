@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Data.SqlClient;
 
-namespace ConsoleApplication2.Principais
+namespace ExportadorGeoPerdasDSS
 {
     class CircMT
     {
