@@ -1,6 +1,4 @@
-﻿using ConsoleApplication2;
-using ConsoleApplication2.Principais;
-using ExecutorOpenDSS;
+﻿using ExportadorGeoPerdasDSS;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
@@ -21,6 +19,7 @@ namespace ExportadorArqDSS
 
         public static bool _criaTodosOsMeses = false;  // flag p/ criar todos os meses de carga MT BT e geradores
         public static bool _criaArqCoordenadas = true; // flag p/ criar arq coordenadas
+        public static bool _criaDispProtecao = true; // flag p/ dispositivos de protecao (Recloser e Fuses) && taxas de falhas em lines
 
         // cria arquivo DSS com 2 alimentadores para uso da Reconfiguracao
         public static bool _modoReconfiguracao = false; //TODO
@@ -32,8 +31,8 @@ namespace ExportadorArqDSS
         public static string _arqLstAlimentadores = "lstAlimentadores.m";
 
         // lista SEs (usado em reconfiguracao somente)
-        public static string _arqLstSEs = "lstSEs.m"; 
-        
+        public static string _arqLstSEs = "lstSEs.m";
+
         // arquivo do Excel com somatorio em PU das curvas de carga
         public static readonly string _arqConsumoMensalPU = "somaCurvasCargaPU.xlsx";
 
@@ -44,9 +43,10 @@ namespace ExportadorArqDSS
         public static string _feriado = "Feriado"; //arquivo de feriado
 
         // path do APP - CASA
-        public static readonly string _path = @"F:\DropboxZecao\Dropbox2018\Dropbox\01_4950_P\";
+        //public static readonly string _path = @"F:\DropboxZecao\Dropbox2018\Dropbox\01_4950_P\";
         //public static readonly string _path = @"F:\DropboxZecao\Dropbox2018\Dropbox\01_4950_RECONF\";
-        //public static readonly string _path = @"F:\DropboxZecao\Dropbox2018\Dropbox\Dropbox\0doutorado\0soft\2020Dijkstra\1CemigDFeeders\";               
+        //public static readonly string _path = @"F:\DropboxZecao\Dropbox2018\Dropbox\Dropbox\0doutorado\0soft\0alimCemig\1CemigDFeeders\";
+        public static readonly string _path = @"F:\DropboxZecao\Dropbox2018\Dropbox\Dropbox\0doutorado\0soft\0alimCemig\1CemigDSAIDI\";
         //public static readonly string _path = @"\0_alimTese\t2\";
 
         //CEMIG
@@ -81,7 +81,11 @@ namespace ExportadorArqDSS
 
         //membros privados
         private static string _alim;
-        private static Param _par;
+
+        //Param(string path, string permRes, string codBase, string pathAlim, string conjAlim, string trEM)
+
+        public static Param _par = new Param(_path, _permRes, _codBase,"","","");
+
         private static SqlConnectionStringBuilder _connBuilder;
 
         private static StrBoolElementosSDE _structElem;
@@ -108,8 +112,6 @@ namespace ExportadorArqDSS
 
             // variaveis auxiliares
             CarregaVariaveisAux();
-
-            _par._codBase = _codBase;
 
             // se modo reconfiguracao
             if (_modoReconfiguracao)
@@ -237,16 +239,18 @@ namespace ExportadorArqDSS
             // preenche variavel da classe
             _alim = alim;            
             _par._pathAlim =  _path + alim + "\\";
-            /*
+            
             //Cria o diretório do alimentador, caso não exista
             if (!System.IO.Directory.Exists(_par._pathAlim))
             {
                 System.IO.Directory.CreateDirectory(_par._pathAlim);
             }
             
+            /*
             // Segmento MT
-            CriaSegmentoMTDSS();         
+            CriaSegmentoMTDSS();     */    
 
+            /*
             // Se nao tem segmento, aborta 
             if (!_structElem._temSegmentoMT)
             { 
@@ -274,8 +278,8 @@ namespace ExportadorArqDSS
             CriaRamaisDSS();
 
             // Carga MT
-            CriaCargaMTDSS();       */    
-            
+            CriaCargaMTDSS();           
+            */
 
             // Carga BT
             CriaCargaBTDSS();   
@@ -309,18 +313,18 @@ namespace ExportadorArqDSS
 
         private static string GetNomeArqCurvaCargaCliMT()
         {
-            return _path + _permRes + _arqCurvaCargaCliMT;
+            return _path + _par._permRes + _arqCurvaCargaCliMT;
         }
                 
         private static string GetNomeArqConsumoMensalPU()
         {
-            return _path + _permRes +_arqConsumoMensalPU;
+            return _path + _par._permRes +_arqConsumoMensalPU;
         }
 
         // nome arquivo feriado
         private static string GetNomeArqFeriado()
         {
-            return _path + _permRes + _feriado + _ano + ".txt";
+            return _path + _par._permRes + _feriado + _ano + ".txt";
         }
 
         private static void CriaGeradorMT()
@@ -359,12 +363,12 @@ namespace ExportadorArqDSS
 
         private static void CriaChaveMT()
         {
-            ChaveMT oChaveMT = new ChaveMT(_alim, _connBuilder, _par);
+            ChaveMT oChaveMT = new ChaveMT(_alim, _connBuilder, _par, _criaDispProtecao);
 
             // realiza consulta 
             _structElem._temChaveMT = oChaveMT.ConsultaBanco(_modoReconfiguracao);
 
-            // _temChaveMT
+            // _temChaveMTno 
             if (_structElem._temChaveMT)
             {
                 oChaveMT.GravaEmArquivo();
@@ -388,7 +392,7 @@ namespace ExportadorArqDSS
         // cria arquivo dss de segmentos de MT
         private static void CriaSegmentoMTDSS()
         {
-            SegmentoMT oSegMT = new SegmentoMT(_alim, _connBuilder, _SDEE, _par );
+            SegmentoMT oSegMT = new SegmentoMT(_alim, _connBuilder, _SDEE, _par, _criaDispProtecao );
 
             // realiza consulta StoredSegmentoMT 
             _structElem._temSegmentoMT = oSegMT.ConsultaStoredSegmentoMT(_modoReconfiguracao);
@@ -401,13 +405,18 @@ namespace ExportadorArqDSS
             {
                 oSegMT.GravaEmArquivo();
 
+                // atualiza parametros 
+                _par = oSegMT.GetParam(); 
+
+                // se modo criar arq coordenadas
                 if (_criaArqCoordenadas)
                 {
+                    //
+                    oSegMT.ConsultaBusCoord(_modoReconfiguracao);
+
+                    //
                     oSegMT.GravaArqCoord();
                 }
-
-                // atualiza parametros 
-                _par = oSegMT._par;
             }
             // se alimentador nao tem segmento MT aborta
             else
@@ -552,19 +561,19 @@ namespace ExportadorArqDSS
             if (infoCabecalho != null)
             {
                 // grava arquivo para ser utilizado pela OpenDSS 
-                ExecutorOpenDSS.ArqManip.SafeDelete(GetNomeArqCabecalho());
+                ArqManip.SafeDelete(GetNomeArqCabecalho());
 
-                ExecutorOpenDSS.ArqManip.GravaEmArquivo(infoCabecalho[0], GetNomeArqCabecalho());
-
-                // arquivo para ser utilizado pela customizacao COM do OpenDSS
-                ExecutorOpenDSS.ArqManip.SafeDelete(GetNomeArqCabecalhoCOM());
-
-                ExecutorOpenDSS.ArqManip.GravaEmArquivo(infoCabecalho[1], GetNomeArqCabecalhoCOM());
+                ArqManip.GravaEmArquivo(infoCabecalho[0], GetNomeArqCabecalho());
 
                 // arquivo para ser utilizado pela customizacao COM do OpenDSS
-                ExecutorOpenDSS.ArqManip.SafeDelete(GetNomeArquivoB());
+                ArqManip.SafeDelete(GetNomeArqCabecalhoCOM());
 
-                ExecutorOpenDSS.ArqManip.GravaEmArquivo(infoCabecalho[2], GetNomeArquivoB());
+                ArqManip.GravaEmArquivo(infoCabecalho[1], GetNomeArqCabecalhoCOM());
+
+                // arquivo para ser utilizado pela customizacao COM do OpenDSS
+                ArqManip.SafeDelete(GetNomeArquivoB());
+
+                ArqManip.GravaEmArquivo(infoCabecalho[2], GetNomeArquivoB());
             }
         }
 
