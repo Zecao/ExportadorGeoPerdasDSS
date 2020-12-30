@@ -1,12 +1,8 @@
-﻿using ConsoleApplication2.Principais;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Data.SqlClient;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace ConsoleApplication2
+namespace ExportadorGeoPerdasDSS
 {
     class GeradorMT
     {
@@ -103,10 +99,10 @@ namespace ConsoleApplication2
 
         internal void GravaEmArquivo()
         {
-            ExecutorOpenDSS.ArqManip.SafeDelete(GetNomeArq());
+            ArqManip.SafeDelete(GetNomeArq());
 
             // grava em arquivo
-            ExecutorOpenDSS.ArqManip.GravaEmArquivo(_arqGeradorMT.ToString(), GetNomeArq());
+            ArqManip.GravaEmArquivo(_arqGeradorMT.ToString(), GetNomeArq());
         }
     }
 }
