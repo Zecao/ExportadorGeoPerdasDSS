@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ConsoleApplication2.Principais
+namespace ExportadorGeoPerdasDSS
 {
     class Trafo
     {
@@ -206,10 +206,10 @@ namespace ConsoleApplication2.Principais
 
         internal void GravaEmArquivo()
         {
-            ExecutorOpenDSS.ArqManip.SafeDelete(GetNomeArq());
+            ArqManip.SafeDelete(GetNomeArq());
 
             // grava em arquivo
-            ExecutorOpenDSS.ArqManip.GravaEmArquivo(_arqTrafo.ToString(), GetNomeArq());
+            ArqManip.GravaEmArquivo(_arqTrafo.ToString(), GetNomeArq());
         }
     }
 }
