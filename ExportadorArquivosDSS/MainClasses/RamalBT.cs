@@ -3,7 +3,7 @@ using System.Data.SqlClient;
 using System.Text;
 
 
-namespace ConsoleApplication2.Principais
+namespace ExportadorGeoPerdasDSS
 {
     class RamalBT
     {
@@ -98,9 +98,9 @@ namespace ConsoleApplication2.Principais
 
         internal void GravaEmArquivo()
         {
-            ExecutorOpenDSS.ArqManip.SafeDelete(GetNomeArq());
+            ArqManip.SafeDelete(GetNomeArq());
 
-            ExecutorOpenDSS.ArqManip.GravaEmArquivo(_arqSegmentoBT.ToString(), GetNomeArq());
+            ArqManip.GravaEmArquivo(_arqSegmentoBT.ToString(), GetNomeArq());
         }
     }
 }
