@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace ConsoleApplication2.Principais
+namespace ExportadorGeoPerdasDSS
 {
     class CargaBT
     {
@@ -109,6 +107,7 @@ namespace ConsoleApplication2.Principais
                             string demanda = AuxFunc.CalcDemanda(consumoMes, _iMes, _ano, rs["TipCrvaCarga"].ToString(), _numDiasFeriadoXMes, _somaCurvaCargaDiariaPU);
 
                             string linha = "";
+
                             // se modelo de carga ANEEL
                             switch (_SDEE._modeloCarga)
                             {
@@ -123,7 +122,7 @@ namespace ConsoleApplication2.Principais
                                        + ",pf=0.92,Vminpu=0.92,Vmaxpu=1.5"
                                        + ",model=2"
                                        + ",daily=" + rs["TipCrvaCarga"].ToString()
-                                       + ",status=variable" + Environment.NewLine;
+                                       + ",status=variable";
 
                                     // carga model=3
                                     linha += "new load." + rs["CodConsBT"].ToString() + "M3"
@@ -134,7 +133,7 @@ namespace ConsoleApplication2.Principais
                                         + ",pf=0.92,Vminpu=0.92,Vmaxpu=1.5"
                                         + ",model=3"
                                         + ",daily=" + rs["TipCrvaCarga"].ToString()
-                                        + ",status=variable" + Environment.NewLine;
+                                        + ",status=variable";
                                     break;
 
                                 // modelo P constante
@@ -150,9 +149,19 @@ namespace ConsoleApplication2.Principais
                                        + ",pf=0.92,Vminpu=0.92,Vmaxpu=1.5"
                                        + ",model=1"
                                        + ",daily=" + rs["TipCrvaCarga"].ToString()
-                                       + ",status=variable" + Environment.NewLine;
+                                       + ",status=variable"; 
 
                                     break;
+                            }
+
+                            // alterar numCust=0 p/ cargas do tipo IP (iluminacao publica)
+                            if (rs["TipCrvaCarga"].ToString().Equals("IP"))
+                            {
+                                linha += ",NumCust=0" + Environment.NewLine;
+                            }
+                            else
+                            {
+                                linha += Environment.NewLine;
                             }
 
                             _arqSegmentoBT.Append(linha);
@@ -215,9 +224,9 @@ namespace ConsoleApplication2.Principais
 
         internal void GravaEmArquivo()
         {
-            ExecutorOpenDSS.ArqManip.SafeDelete(GetNomeArq());
+            ArqManip.SafeDelete(GetNomeArq());
 
-            ExecutorOpenDSS.ArqManip.GravaEmArquivo(_arqSegmentoBT.ToString(), GetNomeArq());
+            ArqManip.GravaEmArquivo(_arqSegmentoBT.ToString(), GetNomeArq());
         }
     }
 }
