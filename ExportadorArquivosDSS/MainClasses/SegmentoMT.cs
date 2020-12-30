@@ -1,32 +1,51 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace ConsoleApplication2.Principais
+namespace ExportadorGeoPerdasDSS
 {
     class SegmentoMT
     {
+        // arquivo do Excel com taxas de falhas (FaultRate) dos lineCodes
+        public static readonly string _arqDicReliability = "dictionayReliability.xlsx";
+
         // membros privados
         private static readonly string _segmentosMT = "SegmentosMT.dss";
-        private static readonly string _coordMT = "CoordMT.csv";        
+        private static readonly string _coordMT = "CoordMT.csv";
 
+        private readonly bool _criaDispProtecao;
         private readonly string _alim;
         private static SqlConnectionStringBuilder _connBuilder;
         private StringBuilder _arqSegmentoMT;
         private StringBuilder _arqCoord;
         private readonly ModeloSDEE _SDEE;
-        
-        public  Param _par;
+        private readonly Dictionary<string, double> _dicLineCodeFaultRate;
 
-        public SegmentoMT(string alim, SqlConnectionStringBuilder connBuilder, ModeloSDEE sdee, Param par)
+        public static Param _par;
+
+        public Param Param { get; }
+
+        public SegmentoMT(string alim, SqlConnectionStringBuilder connBuilder, ModeloSDEE sdee, Param par, bool criaDispProtecao)
         {
             _par = par;
             _alim = alim;
             _connBuilder = connBuilder;
             _SDEE = sdee;
+            _criaDispProtecao = criaDispProtecao;
+
+            // preenche dictionary lineCode X FaultRate
+            if (_criaDispProtecao)
+            {
+                // preenche Dic de soma Carga Mensal - Utilizado por CargaMT e CargaBT
+                _dicLineCodeFaultRate = XLSXFile.XLSX2Dictionary(GetNomeArqDicReliability());
+
+            }
+        }
+
+        private static string GetNomeArqDicReliability()
+        {
+            return _par._path + _par._permRes + _arqDicReliability;
         }
 
         //modelo
@@ -34,7 +53,6 @@ namespace ConsoleApplication2.Principais
         public bool ConsultaStoredSegmentoMT(bool _modoReconf)
         {
             _arqSegmentoMT = new StringBuilder();
-            _arqCoord = new StringBuilder();
 
             using (SqlConnection conn = new SqlConnection(_connBuilder.ToString()))
             {
@@ -69,22 +87,92 @@ namespace ConsoleApplication2.Principais
                         {
                             string fases = AuxFunc.GetFasesDSS(rs["CodFas"].ToString());
                             string numFases = AuxFunc.GetNumFases(rs["CodFas"].ToString());
+                            string lineCode = rs["CodCond"].ToString();
 
                             string linha = "new line." + "TR" + rs["CodSegmMT"] //OBS1:
                                 + " bus1=" + "BMT" + rs["CodPonAcopl1"] + fases //OBS1:
                                 + ",bus2=" + "BMT" + rs["CodPonAcopl2"] + fases //OBS1:
                                 + ",Phases=" + numFases
-                                + ",Linecode=" + rs["CodCond"]
+                                + ",Linecode=" + lineCode
                                 + ",Length=" + rs["Comp_km"]
-                                + ",Units=km" + Environment.NewLine; 
+                                + ",Units=km";
+
+                            if (_criaDispProtecao)
+                            {
+                                //obtem taxa de falha de acordo com o lineCode
+                                string faultRate = GetFaultRate(lineCode);
+
+                                linha += ",FaultRate=" + faultRate + ",Pctperm=20,Repair=3" + Environment.NewLine;
+                            }
+                            else
+                            {
+                                linha += Environment.NewLine;
+                            }                            
 
                             _arqSegmentoMT.Append(linha);
 
+                        }
+                    }
+                }
+
+                //fecha conexao
+                conn.Close();
+            }
+            return true;
+        }
+
+        // 
+        private string GetFaultRate(string lineCode)
+        {
+            if (_dicLineCodeFaultRate.ContainsKey(lineCode))
+            {
+                return _dicLineCodeFaultRate[lineCode].ToString();
+            }
+            else
+            {
+                return "0.06774";
+            }
+        }
+
+        //modelo
+        //new line.TR1113 bus1=BMT1575B.1.2.3,bus2=BMT1568B.1.2.3,Phases=3,Linecode=CAB103_3_3,Length=0.038482,Units=km
+        public bool ConsultaBusCoord(bool _modoReconf)
+        {
+            _arqCoord = new StringBuilder();
+
+            using (SqlConnection conn = new SqlConnection(_connBuilder.ToString()))
+            {
+                // abre conexao 
+                conn.Open();
+
+                using (SqlCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = "select distinct CodPonAcopl1,CoordPAC1_x,CoordPAC1_y from dbo.StoredSegmentoMT";
+
+                    if (_modoReconf)
+                    {
+                        command.CommandText += " where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                        command.Parameters.AddWithValue("@codbase", _par._codBase);
+                    }
+                    else
+                    {
+                        command.CommandText += " where CodBase=@codbase and CodAlim=@CodAlim";
+                        command.Parameters.AddWithValue("@codbase", _par._codBase);
+                        command.Parameters.AddWithValue("@CodAlim", _alim);
+                    }
+                    using (var rs = command.ExecuteReader())
+                    {
+                        // verifica ocorrencia de elemento no banco
+                        if (!rs.HasRows)
+                        {
+                            return false;
+                        }
+
+                        while (rs.Read())
+                        {
                             string linhaPAC1 = "BMT" + rs["CodPonAcopl1"] + "," + rs["CoordPAC1_x"] + "," + rs["CoordPAC1_y"] + Environment.NewLine;
-                            string linhaPAC2 = "BMT" + rs["CodPonAcopl2"] + "," + rs["CoordPAC2_x"] + "," + rs["CoordPAC2_y"] + Environment.NewLine;
 
                             _arqCoord.Append(linhaPAC1);
-                            _arqCoord.Append(linhaPAC2);
                         }
                     }
                 }
@@ -102,16 +190,16 @@ namespace ConsoleApplication2.Principais
 
         internal void GravaEmArquivo()
         {
-            ExecutorOpenDSS.ArqManip.SafeDelete(GetNomeArq());
+            ArqManip.SafeDelete(GetNomeArq());
 
-            ExecutorOpenDSS.ArqManip.GravaEmArquivo( _arqSegmentoMT.ToString(), GetNomeArq());
+            ArqManip.GravaEmArquivo( _arqSegmentoMT.ToString(), GetNomeArq());
         }
 
         internal void GravaArqCoord()
         {
-            ExecutorOpenDSS.ArqManip.SafeDelete(GetNomeArqCoord());
+            ArqManip.SafeDelete(GetNomeArqCoord());
 
-            ExecutorOpenDSS.ArqManip.GravaEmArquivo(_arqCoord.ToString(), GetNomeArqCoord());
+            ArqManip.GravaEmArquivo(_arqCoord.ToString(), GetNomeArqCoord());
         }
 
         private string GetNomeArqCoord()
@@ -191,6 +279,11 @@ namespace ConsoleApplication2.Principais
             _arqSegmentoMT.Append(linha);
 
             return true;
+        }
+
+        internal Param GetParam()
+        {
+            return _par;
         }
     }
 }
