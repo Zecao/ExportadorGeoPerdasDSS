@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ConsoleApplication2.Principais
+namespace ExportadorGeoPerdasDSS
 {
     class AuxFunc
     {
@@ -291,14 +291,15 @@ namespace ConsoleApplication2.Principais
                             break;
                     }
                 }
-
             }
 
-            Dictionary<string, int> tipoDia = new Dictionary<string, int>();
-            // Prepara a variável de saída e retorna
-            tipoDia.Add("DU", DU);
-            tipoDia.Add("SA", SA);
-            tipoDia.Add("DO", DO);
+            Dictionary<string, int> tipoDia = new Dictionary<string, int>
+            {
+                // Prepara a variável de saída e retorna
+                { "DU", DU },
+                { "SA", SA },
+                { "DO", DO }
+            };
             return tipoDia;
         }
 
