@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 
-namespace ConsoleApplication2.Principais
+namespace ExportadorGeoPerdasDSS
 {
     class ChaveMT
     {
@@ -15,12 +13,14 @@ namespace ConsoleApplication2.Principais
         private Param _par;
         private readonly string _alim;
         private static SqlConnectionStringBuilder _connBuilder;
+        private readonly bool _criaDispProtecao;
 
-        public ChaveMT(string alim, SqlConnectionStringBuilder connBuilder, Param par)
+        public ChaveMT(string alim, SqlConnectionStringBuilder connBuilder, Param par, bool criaDispProtecao)
         {
             _par = par;
             _alim = alim;
             _connBuilder = connBuilder;
+            _criaDispProtecao = criaDispProtecao;
         }
 
         // new line.CTR100934 bus1=BMT98417853.2,bus2=BMT98417888.2,Phases=1,LineCode=tieSwitch1,Length=0.001,Units=km,switch=T
@@ -37,7 +37,7 @@ namespace ConsoleApplication2.Principais
 
                 using (SqlCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = "select CodChvMT,CodPonAcopl1,CodPonAcopl2,CodFas,EstChv,Descr "
+                    command.CommandText = "select CodChvMT,CodPonAcopl1,CodPonAcopl2,CodFas,EstChv,Descr,TipoDisp,EloFus "
                             + "from dbo.StoredChaveMT ";
 
                     // se modo reconfiguracao 
@@ -67,6 +67,8 @@ namespace ConsoleApplication2.Principais
                             string numFases = AuxFunc.GetNumFases(rs["CodFas"].ToString());
                             string lineCode = "tieSwitch";
                             string codChave = rs["CodChvMT"].ToString();
+                            string tipoDisp = rs["TipoDisp"].ToString();  
+                            string eloFus = rs["EloFus"].ToString();
 
                             //se chave mono
                             if (numFases.Equals("1"))
@@ -88,12 +90,10 @@ namespace ConsoleApplication2.Principais
                                 linha += "open line.CTR" + codChave + " term=1" + Environment.NewLine; //OBS1 adicionei prefixo CTR
                             }
 
-                            // if recloser 
-                            if (codChave.Contains("R")) //"line.CTRR17947
+                            // creates protection devices (Recloser, Fuses)
+                            if (_criaDispProtecao)
                             {
-                                linha += "new Recloser." + codChave + " monitoredobj='line.CTR" + codChave + "' monitoredterm=1,numfast=1,"
-                                    + "phasedelayed='VERY_INV',grounddelayed='VERY_INV',phasetrip=280,TDPhDelayed=1,GroundTrip=45,TDGrDelayed=14,"
-                                    + "shots=1,recloseintervals=(10, 20, 20)" + Environment.NewLine; 
+                                linha = CreateStrDispProtection(codChave, tipoDisp, eloFus, linha);
                             }
 
                             _arqChaveMT.Append(linha);
@@ -107,6 +107,40 @@ namespace ConsoleApplication2.Principais
             return true;
         }
 
+        // creates protection devices (Recloser, Fuses)
+        private string CreateStrDispProtection(string codChave, string tipoDisp, string eloFus, string linha)
+        {
+            //
+            if ( (codChave.Contains("R")) || tipoDisp.Equals("R") ) 
+            {
+                linha += "new Recloser." + codChave + " monitoredobj='line.CTR" + codChave + "' monitoredterm=1,numfast=1,"
+                    + "phasedelayed='VERY_INV',grounddelayed='VERY_INV',phasetrip=280,TDPhDelayed=1,GroundTrip=45,TDGrDelayed=14,"
+                    + "shots=1,recloseintervals=(10, 20, 20)" + Environment.NewLine;
+            }
+            else if (tipoDisp.Equals("F"))
+            {
+
+                Regex rgxNumero = new Regex(@"[1-9]\d*");
+                Regex rgxTexto = new Regex(@"\p{L}+");
+
+                int corrente = int.Parse(rgxNumero.Match(eloFus).Value);
+                string curva = rgxTexto.Match(eloFus).Value;
+
+                if (curva.Equals(""))
+                {
+                    curva = "T";
+                }
+
+                /*
+                int iCor = int.Parse(corrente); // remove zeros a esquerda ex: 040;s
+                char curva = eloFus.Last();*/
+
+                linha += "new Fuse." + codChave + " monitoredobj='line.CTR" + codChave + "',monitoredterm=1,"
+                 + "Fusecurve='" + curva + "link',ratedcurrent=" + corrente.ToString() + Environment.NewLine;
+            }
+            return linha;
+        }
+
         private string GetNomeArq()
         {
             return _par._pathAlim + _alim + _chave;
@@ -114,10 +148,10 @@ namespace ConsoleApplication2.Principais
 
         internal void GravaEmArquivo()
         {
-            ExecutorOpenDSS.ArqManip.SafeDelete(GetNomeArq());
+            ArqManip.SafeDelete(GetNomeArq());
 
             // grava em arquivo
-            ExecutorOpenDSS.ArqManip.GravaEmArquivo(_arqChaveMT.ToString(), GetNomeArq());
+            ArqManip.GravaEmArquivo(_arqChaveMT.ToString(), GetNomeArq());
         }
     }
 }
