@@ -15,11 +15,11 @@ namespace ExportadorArqDSS
 
         // mes e ano para a geracao dos arquivos de carga BT e MT
         public static int _iMes = 12;
-        public static string _ano = "2019";
+        public static string _ano = "2020"; // 2020
 
-        public static bool _criaTodosOsMeses = false;  // flag p/ criar todos os meses de carga MT BT e geradores
+        public static bool _criaTodosOsMeses = true;  // flag p/ criar todos os meses de carga MT BT e geradores
         public static bool _criaArqCoordenadas = true; // flag p/ criar arq coordenadas
-        public static bool _criaDispProtecao = true; // flag p/ dispositivos de protecao (Recloser e Fuses) && taxas de falhas em lines
+        public static bool _criaDispProtecao = false; // flag p/ dispositivos de protecao (Recloser e Fuses) && taxas de falhas em lines
 
         // cria arquivo DSS com 2 alimentadores para uso da Reconfiguracao
         public static bool _modoReconfiguracao = false; //TODO
@@ -46,23 +46,28 @@ namespace ExportadorArqDSS
         //public static readonly string _path = @"F:\DropboxZecao\Dropbox2018\Dropbox\01_4950_P\";
         //public static readonly string _path = @"F:\DropboxZecao\Dropbox2018\Dropbox\01_4950_RECONF\";
         //public static readonly string _path = @"F:\DropboxZecao\Dropbox2018\Dropbox\Dropbox\0doutorado\0soft\0alimCemig\1CemigDFeeders\";
-        public static readonly string _path = @"F:\DropboxZecao\Dropbox2018\Dropbox\Dropbox\0doutorado\0soft\0alimCemig\1CemigDSAIDI\";
+        //public static readonly string _path = @"F:\DropboxZecao\Dropbox2018\Dropbox\Dropbox\0doutorado\0soft\0alimCemig\1CemigDSAIDI\";
         //public static readonly string _path = @"\0_alimTese\t2\";
 
         //CEMIG
-        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2018\01_4950\";
+        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2019\01_4950_P\";
         //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2019\03_4950_CHAVES_FEC\";
         //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2019\01_4950_RECONF\";
-        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2019\01_4950_P\";
+
+        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2020\01_4950_atipicos\";
+        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2020\01_4950_RECONF\";
+        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2020\01_4950_P_rml\";
+        public static readonly string _path = @"D:\Perdas\2020\01_4950_P\";
+        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2020\01_4950_CAP\";       
 
         // sub diretorio recursos permanentes
         public static string _permRes = "0PermRes\\";
 
         // servidor SGBD
-        public static string _banco = "GEOPERDAS_201919"; // "GEOPERDAS_2019"; //"GEOPERDAS_2018_2";
+        public static string _banco = "GeoPerdas2020_ADPS"; //"GEOPERDAS_201919"; // "GeoPerdas2020_ADPS"; //; // 
 
         // banco
-        public static string _dataSource = @"NOVA\";   // @"NOVA\SQLEXPRESS"; //@"sa-corp-sql01\p" //@"sa-corp-sql06\r";   
+        public static string _dataSource = @"sa-corp-sql0"; //@"sa-corp-sql10\p"; //@"sa-corp-sql0"; //@"sa-corp-sql06\r";
 
         //Modelo PADRAO (GeoPerdas ANEEL)
         //OBS: Capacitor pode ser colocado na hora da execucao
@@ -71,7 +76,7 @@ namespace ExportadorArqDSS
 
         // sim3 modelo de carga PCONST
         private static ModeloSDEE _SDEE = new ModeloSDEE(usarCondutoresSeqZero: false, utilizarCurvaDeCargaClienteMTIndividual: false, incluirCapacitoresMT: true, modeloCarga: "PCONST",
-           reatanciaTrafos: false);
+           reatanciaTrafos: true);
 
         // sim8 modelo de carga PCONST + curvaCliPrim Ind
         //private static ModeloSDEE _SDEE = new ModeloSDEE(usarCondutoresSeqZero: false, utilizarCurvaDeCargaClienteMTIndividual: true, incluirCapacitoresMT: true, modeloCarga: "PCONST",
@@ -244,13 +249,11 @@ namespace ExportadorArqDSS
             if (!System.IO.Directory.Exists(_par._pathAlim))
             {
                 System.IO.Directory.CreateDirectory(_par._pathAlim);
-            }
+            }                
             
-            /*
             // Segmento MT
-            CriaSegmentoMTDSS();     */    
+            CriaSegmentoMTDSS();  
 
-            /*
             // Se nao tem segmento, aborta 
             if (!_structElem._temSegmentoMT)
             { 
@@ -258,14 +261,14 @@ namespace ExportadorArqDSS
             }
 
             // Regulador MT
-            CriaReguladorMTDSS();
-
+            CriaReguladorMTDSS(); 
+            
             // Chave MT
-            CriaChaveMT();            
+            CriaChaveMT();   
             
             // Transformador MT
-            CriaTransformadorMTMTMTBTDSS();
-
+            CriaTransformadorMTMTMTBTDSS();          
+            
             // Capacitor
             if ( _SDEE._incluirCapacitoresMT )
             {
@@ -275,22 +278,19 @@ namespace ExportadorArqDSS
             CriaSegmentoBTDSS();
 
             // Ramais 
-            CriaRamaisDSS();
-
-            // Carga MT
-            CriaCargaMTDSS();           
-            */
-
-            // Carga BT
-            CriaCargaBTDSS();   
+            CriaRamaisDSS();            
             
-            /*
+            // Carga MT
+            CriaCargaMTDSS();  
+            
+            // Carga BT
+            CriaCargaBTDSS(); 
+            
             // Gerador MT
-            CriaGeradorMT();
-            */
-            /*
+            CriaGeradorMT();            
+            
             // arquivo cabecalho
-            CriaCabecalhoDSS();*/
+            CriaCabecalhoDSS();
         }
 
         private static void CarregaVariaveisAux()
