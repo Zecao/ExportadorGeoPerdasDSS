@@ -62,6 +62,7 @@ namespace ExportadorGeoPerdasDSS
                         {
                             // comprimento ramal interno
                             string compRmlInt = rs["Descr"].ToString();
+
                             string compRml = rs["Comp_km"].ToString();
                             
                             // atribui compRml interno ao 
