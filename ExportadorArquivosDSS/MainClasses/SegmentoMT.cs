@@ -24,7 +24,7 @@ namespace ExportadorGeoPerdasDSS
 
         public static Param _par;
 
-        public Param Param { get; }
+        //public Param Param { get; }
 
         public SegmentoMT(string alim, SqlConnectionStringBuilder connBuilder, ModeloSDEE sdee, Param par, bool criaDispProtecao)
         {
@@ -147,16 +147,22 @@ namespace ExportadorGeoPerdasDSS
 
                 using (SqlCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = "select distinct CodPonAcopl1,CoordPAC1_x,CoordPAC1_y from dbo.StoredSegmentoMT";
+                    command.CommandText = "";
 
                     if (_modoReconf)
                     {
-                        command.CommandText += " where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                        command.CommandText += "select CodPonAcopl1 as 'PAC', CoordPAC1_x,CoordPAC1_y from dbo.StoredSegmentoMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")" +
+                        " union " +
+                        "select CodPonAcopl2 as 'PAC', CoordPAC1_x,CoordPAC1_y from dbo.StoredSegmentoMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
-                        command.CommandText += " where CodBase=@codbase and CodAlim=@CodAlim";
+                        command.CommandText += "select CodPonAcopl1 as 'PAC', CoordPAC1_x,CoordPAC1_y from dbo.StoredSegmentoMT where CodBase=@codbase and CodAlim=@CodAlim" +
+                        " union " +
+                        "select CodPonAcopl2 as 'PAC', CoordPAC1_x,CoordPAC1_y from dbo.StoredSegmentoMT where CodBase=@codbase and CodAlim=@CodAlim";
+
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _alim);
                     }
@@ -170,7 +176,7 @@ namespace ExportadorGeoPerdasDSS
 
                         while (rs.Read())
                         {
-                            string linhaPAC1 = "BMT" + rs["CodPonAcopl1"] + "," + rs["CoordPAC1_x"] + "," + rs["CoordPAC1_y"] + Environment.NewLine;
+                            string linhaPAC1 = "BMT" + rs["PAC"] + "," + rs["CoordPAC1_x"] + "," + rs["CoordPAC1_y"] + Environment.NewLine;
 
                             _arqCoord.Append(linhaPAC1);
                         }
