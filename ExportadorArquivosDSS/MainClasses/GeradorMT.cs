@@ -66,16 +66,21 @@ namespace ExportadorGeoPerdasDSS
                         {
                             string fasesDSS = AuxFunc.GetFasesDSS(rs["CodFas"].ToString());
                             string CodGeraMT = rs["CodGeraMT"].ToString();
+
                             // curva PU
                             string linha = "new loadshape.c" + CodGeraMT + " npts=24,interval=1.0,mult=" + rs["Descr"].ToString() + Environment.NewLine;
+
+                            // Obtem a geracao de acordo com o mes
+                            string geracaoMes = AuxFunc.GetConsumoMesCorrente(rs, _iMes);
 
                             // usina
                             linha += "new generator." + CodGeraMT
                             + " bus1=" + "BMT" + rs["CodPonAcopl"] + ".1.2.3"
                             + ",Phases=3"
                             + ",kv=" + rs["TnsLnh_kV"].ToString()
-                            + ",kW=" + rs["EnerMedid01_MWh"].ToString()
+                            + ",kW=" + geracaoMes
                             + ",pf=0.95"
+                            + ",model=1" 
                             + ",daily=c" + CodGeraMT
                             + ",status=Fixed" + Environment.NewLine;
 
