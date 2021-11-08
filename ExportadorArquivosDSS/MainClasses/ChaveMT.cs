@@ -37,8 +37,12 @@ namespace ExportadorGeoPerdasDSS
 
                 using (SqlCommand command = conn.CreateCommand())
                 {
+                    /* TODO 
                     command.CommandText = "select CodChvMT,CodPonAcopl1,CodPonAcopl2,CodFas,EstChv,Descr,TipoDisp,EloFus "
-                            + "from dbo.StoredChaveMT ";
+                            + "from dbo.StoredChaveMT ";*/
+
+                    command.CommandText = "select CodChvMT,CodPonAcopl1,CodPonAcopl2,CodFas,EstChv,Descr "
+                     + "from dbo.StoredChaveMT ";
 
                     // se modo reconfiguracao 
                     if (_modoReconf)
@@ -67,8 +71,7 @@ namespace ExportadorGeoPerdasDSS
                             string numFases = AuxFunc.GetNumFases(rs["CodFas"].ToString());
                             string lineCode = "tieSwitch";
                             string codChave = rs["CodChvMT"].ToString();
-                            string tipoDisp = rs["TipoDisp"].ToString();  
-                            string eloFus = rs["EloFus"].ToString();
+
 
                             //se chave mono
                             if (numFases.Equals("1"))
@@ -93,6 +96,8 @@ namespace ExportadorGeoPerdasDSS
                             // creates protection devices (Recloser, Fuses)
                             if (_criaDispProtecao)
                             {
+                                string tipoDisp = rs["TipoDisp"].ToString();
+                                string eloFus = rs["EloFus"].ToString();
                                 linha = CreateStrDispProtection(codChave, tipoDisp, eloFus, linha);
                             }
 
