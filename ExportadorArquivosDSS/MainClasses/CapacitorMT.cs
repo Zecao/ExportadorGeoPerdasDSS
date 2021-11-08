@@ -63,22 +63,22 @@ namespace ExportadorGeoPerdasDSS
                         {
                             string fasesDSS = AuxFunc.GetFasesDSS(rs["CodFas"].ToString());
                             string numFases = AuxFunc.GetNumFases(rs["CodFas"].ToString());
+                            string kvbase = rs["kvnom"].ToString();
 
-                            string kvbase;
-
+                            /* // OLD CODE
                             // conserta base kv do capacitor
                             switch ( rs["kvnom"].ToString() )
                             {
-                                case "15.0":
+                                case "13.8":
                                     kvbase = "13.8";
                                     break;
-                                case "24.2":
+                                case "22.2":
                                     kvbase = "22.0";
                                     break;
                                 default:
                                     kvbase = "13.8";
                                     break;
-                            } 
+                            } */
 
                             string linha="";
 
