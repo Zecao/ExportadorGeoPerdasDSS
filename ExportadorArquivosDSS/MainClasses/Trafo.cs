@@ -75,25 +75,31 @@ namespace ExportadorGeoPerdasDSS
 
                             string barraBT = rs["CodPonAcopl2"].ToString();
                             string pot = rs["PotNom_kVA"].ToString();
-                           // double pot2 =Double.TryParse(rs["PotNom_kVA"];
 
+                            // double pot2 =Double.TryParse(rs["PotNom_kVA"];
+                            // pot = string.Format("{0:.##}}", pot2);
 
-                            //pot = string.Format("{0:.##}}", pot2);
-
-                            string tensaoFF = AuxFunc.GetTensaoFF(rs["TnsLnh1_kV"].ToString());
+                            string tensaoFF = rs["TnsLnh1_kV"].ToString(); 
+                            
                             string tensaoFN = AuxFunc.GetTensaoFN(tensaoFF);
                             string faseDSS = AuxFunc.GetFasesDSS(rs["CodFasPrim"].ToString());
+
+                            string CodTrafo = rs["CodTrafo"].ToString();
 
                             string linha;
 
                             // OBS: verificado que no geoperdas2018, o trafo mono apresenta TipTrafo=1
                             switch (rs["TipTrafo"].ToString())
                             {
-                                //monofasico
+                                //monofasico 3 fios
                                 case "1":
                                     linha = CriaStringTrafoMonofasico(rs, faseDSS, barraBT, tensaoFN, pot);
                                     break;
-                                //posto transformador // TODO tipTrafo nao existente no GeoPerdas
+                                //monofasico 3 fios
+                                case "2":
+                                    linha = CriaStringTrafoMonofasico(rs, faseDSS, barraBT, tensaoFN, pot);
+                                    break;
+                                //posto transformador
                                 case "5":
                                     linha = CriaStringPostoTransformador(rs, faseDSS, barraBT, tensaoFF, pot);
                                     break;
@@ -112,16 +118,49 @@ namespace ExportadorGeoPerdasDSS
             return true;
         }
 
-        private string CriaStringPostoTransformador(SqlDataReader rs, string faseDSS, string barraBT, string tensaoFF, string pot)
+        //
+        private string TensaoLinha2TensaoFase(string tensaoFF)
+        {
+            /*
+            //verifica se eh vazia 
+            if ( tensaoFF.Equals("") && tipoBanco.Equals("5") )
+            {
+                return "34.50";
+            }
+            if ( tensaoFF.Equals("") && tipoBanco.Equals("4") )
+            {
+                return "13.80";
+            }*/
+
+            //necessario transformar para double
+            double tensaoFFd = double.Parse(tensaoFF);
+
+            // Se tensao fasePrimDSS, o posto eh abaixador 
+            if (tensaoFFd.Equals(34.5))
+            {
+                return "19.92";
+            }
+            if (tensaoFFd.Equals(13.8))
+            {
+                return "7.97";
+            }
+            return "7.97";
+        }
+
+
+        /* Exemplo de declaracao PT
+! !elevador
+new transformer.873922PT_1 Phases=1,Windings=2,Buses=[BMT174122367.1.2 BMT174122366.1.0],Conns=[delta wye],kvs=[13.8  19.92]
+! !abaixador 
+new transformer.873969PT_1 Phases=1,Windings=2,Buses=[BMT174122333.1.2 BMT174122332.1.0],Conns=[delta wye],kvs=[34.5 7.97]
+        */
+
+        private string CriaStringPostoTransformador(SqlDataReader rs, string faseDSS, string barraBT, string fasePrimDSS, string pot)
         {
             string faseSecuDSS = AuxFunc.GetFasesDSS(rs["CodFasSecu"].ToString());
 
-            // TODO atribui tensaoPrimario conforme modelo abaixado
-            string tipoPT = rs["Descr"].ToString();
-            if (tipoPT.Equals("abaixador"))
-            {
-                tensaoFF = "34.5";
-            }
+            // OBS: de acordo com o padrao do GeoPerdas, o CodFasSec Como o PT eh delta/estrela, a tensao secundaria de linha deve ser transformada em tensao de fase.
+            string tensaoSec = TensaoLinha2TensaoFase(rs["TenSecu_kV"].ToString()); 
 
             // 
             string linha = "new transformer." + rs["CodTrafo"].ToString() + "_" + rs["CodBnc"].ToString()
@@ -130,7 +169,7 @@ namespace ExportadorGeoPerdasDSS
                  + ",Buses=[" + "BMT" + rs["CodPonAcopl1"].ToString() + faseDSS 
                  + " " + "BMT" + barraBT + faseSecuDSS + "]" 
                  + ",Conns=[delta wye]"
-                 + ",kvs=[" + tensaoFF + " " + rs["TenSecu_kV"].ToString() + "]" 
+                 + ",kvs=[" + fasePrimDSS + " " + tensaoSec  + "]" 
                  + ",kvas=[" + pot + " " + pot + "]"
                  + ",Taps=[1," + rs["Tap_pu"].ToString() + "]";
 
@@ -176,6 +215,9 @@ namespace ExportadorGeoPerdasDSS
         // cria string trafo trifasico
         private string CriaStringTrafoTrifasico(SqlDataReader rs, string faseDSS, string barraBT, string tensaoFF, string pot)
         {
+            // TODO OBS: comentado pois alterava a tensao de linha correta do PT 34,5 kV 
+            //tensaoFF = TrataTensaoLinhaANEEL(tensaoFF,"4");
+
             //
             string linha = "new transformer." + rs["CodTrafo"].ToString()
                  + " Phases=3"
