@@ -79,6 +79,9 @@ namespace ExportadorGeoPerdasDSS
                     ret = ".1.2";
                     break;
                 case "CA":
+                    ret = ".3.1";
+                    break;
+                case "AC":
                     ret = ".1.3";
                     break;
                 case "BC":
@@ -406,6 +409,14 @@ namespace ExportadorGeoPerdasDSS
         // que ocorre com a execucao da SP Principal no GeoPerdas 
         internal static string GetTensaoFF(string tensaoFF)
         {
+            // tensao FF vazia (ex. trafo nao visitado)
+            if (tensaoFF.Equals(""))
+            {
+                return "13.8";
+            }
+            return tensaoFF;
+
+            /* // OLD CODE
             // nivel de tensao default
             string ret = "13.8";
 
@@ -422,36 +433,9 @@ namespace ExportadorGeoPerdasDSS
                 ret = "34.5";
             else if (tensaoFFd.Equals(22.0))
                 ret = "22.0";
-            
-            return ret;
+             *             
+            */
         }
-        /*
-        internal static string GetTensaoFF(SqlDataReader tensaoFF)
-        {
-            tensaoFF.ToString();
-
-
-            string tensaoFF
-
-            // nivel de tensao default
-            string ret = "13.8";
-
-            // tensao FF vazia (ex. trafo nao visitado)
-            if (tensaoFF.Equals(""))
-            {
-                return ret;
-            }
-
-            //necessario transformar para double
-            double tensaoFFd = double.Parse(tensaoFF);
-
-            if (tensaoFFd.Equals(34.5))
-                ret = "34.5";
-            else if (tensaoFFd.Equals(22.0))
-                ret = "22.0";
-
-            return ret;
-        }*/
 
         internal static string GetPotPorFase(string p)
         {
