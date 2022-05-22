@@ -11,18 +11,18 @@ namespace ExportadorArqDSS
         // membros publicos -> parametros configuraveis pelo usuario
 
         // codbase
-        public static string _codBase = "4950";
+        public static string _codBase = "2021129999"; //"2021124950"; //  "2021124950" //"2021124950" "2021124950" //"2020015050"; // "4950"; //"2020014950";
 
         // mes e ano para a geracao dos arquivos de carga BT e MT
         public static int _iMes = 12;
-        public static string _ano = "2020"; // 2020
+        public static string _ano = "2021"; // 2020
 
-        public static bool _criaTodosOsMeses = true;  // flag p/ criar todos os meses de carga MT BT e geradores
-        public static bool _criaArqCoordenadas = true; // flag p/ criar arq coordenadas
+        public static bool _criaTodosOsMeses = false;  // flag p/ criar todos os meses de carga MT BT e geradores
+        public static bool _criaArqCoordenadas = false; // flag p/ criar arq coordenadas
         public static bool _criaDispProtecao = false; // flag p/ dispositivos de protecao (Recloser e Fuses) && taxas de falhas em lines
 
         // cria arquivo DSS com 2 alimentadores para uso da Reconfiguracao
-        public static bool _modoReconfiguracao = false; //TODO
+        public static bool _modoReconfiguracao = false; //TODO eh necessario arquivo SE ?? Simplificar.
 
         // booleana se alimentadores atipicos
         public static bool _alimAtipico = true;
@@ -50,24 +50,26 @@ namespace ExportadorArqDSS
         //public static readonly string _path = @"\0_alimTese\t2\";
 
         //CEMIG
-        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2019\01_4950_P\";
-        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2019\03_4950_CHAVES_FEC\";
-        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2019\01_4950_RECONF\";
+        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2021\01_4950_P\";
+        public static readonly string _path = @"D:\Users\c055896.NETCEMIG\Desktop\01_4950_P\";
+        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2021\01_atipicos\";
+        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2021\01_copia\";
 
+        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2021\1S\01_5050_P\";
+        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2021\01_5050_P\";
         //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2020\01_4950_atipicos\";
         //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2020\01_4950_RECONF\";
         //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2020\01_4950_P_rml\";
-        public static readonly string _path = @"D:\Perdas\2020\01_4950_P\";
         //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2020\01_4950_CAP\";       
 
         // sub diretorio recursos permanentes
         public static string _permRes = "0PermRes\\";
 
         // servidor SGBD
-        public static string _banco = "GeoPerdas2020_ADPS"; //"GEOPERDAS_201919"; // "GeoPerdas2020_ADPS"; //; // 
+        public static string _banco = "GeoPerdas_2S2021"; //GeoPerdas_2S2021 "GeoPerdas1T2021_PRMP_V2"; //"GEOPERDAS_201919"; // "GeoPerdas2020_ADPS"; //GeoPerdas1T2021_PRMP_V2; // 
 
         // banco
-        public static string _dataSource = @"sa-corp-sql0"; //@"sa-corp-sql10\p"; //@"sa-corp-sql0"; //@"sa-corp-sql06\r";
+        public static string _dataSource = @"PWNBS-PERTEC01\PTEC"; //@"sa-corp-sql0"; // @"sa-corp-sql06\r";
 
         //Modelo PADRAO (GeoPerdas ANEEL)
         //OBS: Capacitor pode ser colocado na hora da execucao
@@ -253,21 +255,21 @@ namespace ExportadorArqDSS
             
             // Segmento MT
             CriaSegmentoMTDSS();  
-
+            
             // Se nao tem segmento, aborta 
             if (!_structElem._temSegmentoMT)
             { 
                 return;
             }
-
+            
             // Regulador MT
             CriaReguladorMTDSS(); 
             
             // Chave MT
-            CriaChaveMT();   
+            CriaChaveMT();  
             
             // Transformador MT
-            CriaTransformadorMTMTMTBTDSS();          
+            CriaTransformadorMTMTMTBTDSS();    
             
             // Capacitor
             if ( _SDEE._incluirCapacitoresMT )
@@ -278,17 +280,17 @@ namespace ExportadorArqDSS
             CriaSegmentoBTDSS();
 
             // Ramais 
-            CriaRamaisDSS();            
+            CriaRamaisDSS();         
             
             // Carga MT
             CriaCargaMTDSS();  
             
             // Carga BT
-            CriaCargaBTDSS(); 
+            CriaCargaBTDSS();
             
             // Gerador MT
-            CriaGeradorMT();            
-            
+            CriaGeradorMT();       
+
             // arquivo cabecalho
             CriaCabecalhoDSS();
         }
