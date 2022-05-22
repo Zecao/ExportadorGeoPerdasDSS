@@ -63,11 +63,13 @@ namespace ExportadorGeoPerdasDSS
 
                         while (rs.Read())
                         {
-                            string tensaoFN = AuxFunc.GetTensaoFN(rs["TnsLnh1_kV"].ToString()); 
+                            // OBS: necessario converter a TnsLnh1_kV p/ fase-neutro, visto as mesmas ja virem adequadas p/ o caso do BRT em estrela  
+                            //string tensaoFN = rs["TnsLnh1_kV"].ToString(); // OLD CODE
+                            string tensaoFN = AuxFunc.GetTensaoFN(rs["TnsLnh1_kV"].ToString());
+                            string ptratio = GetPTRatio(tensaoFN);
                             string tipoRegul = rs["TipRegul"].ToString();
                             string perVazioPer = CalcPerdVazio(rs);
                             string vRegVolts = CalcVReg(rs["TenRgl_pu"].ToString());
-                            string ptratio = GetPTRatio(rs["TnsLnh1_kV"].ToString());
 
                             // banco de regulador
                             if (tipoRegul.Equals("4"))
@@ -166,10 +168,11 @@ namespace ExportadorGeoPerdasDSS
             double tensaoFFd = double.Parse(tensaoLinha);
 
             // verifica se o nivel de tensaaFF eh 34.5kV ou 22.0kV
-            if (tensaoFFd.Equals(34.5))
+            if (tensaoFFd.Equals(19.92))
             {
                 ret = "166.0";
-            }else if (tensaoFFd.Equals(22.0))
+            }
+            else if (tensaoFFd.Equals(12.70))
             {
                 ret = "105.8";
             }
