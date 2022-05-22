@@ -65,6 +65,11 @@ namespace ExportadorGeoPerdasDSS
 
                             string compRml = rs["Comp_km"].ToString();
                             
+                            /* // TODO: aumento de 3metros do ramal
+                            double compRml_D = Double.Parse(compRml) + 0.003;
+
+                            compRml = compRml_D.ToString();*/
+                            
                             // atribui compRml interno ao 
                             if (!compRmlInt.Equals(""))
                             {
