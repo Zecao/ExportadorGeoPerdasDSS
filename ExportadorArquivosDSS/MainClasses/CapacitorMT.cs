@@ -65,21 +65,6 @@ namespace ExportadorGeoPerdasDSS
                             string numFases = AuxFunc.GetNumFases(rs["CodFas"].ToString());
                             string kvbase = rs["kvnom"].ToString();
 
-                            /* // OLD CODE
-                            // conserta base kv do capacitor
-                            switch ( rs["kvnom"].ToString() )
-                            {
-                                case "13.8":
-                                    kvbase = "13.8";
-                                    break;
-                                case "22.2":
-                                    kvbase = "22.0";
-                                    break;
-                                default:
-                                    kvbase = "13.8";
-                                    break;
-                            } */
-
                             string linha="";
 
                             // se banco trifasico
