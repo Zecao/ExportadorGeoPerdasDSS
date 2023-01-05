@@ -10,7 +10,7 @@ namespace ExportadorGeoPerdasDSS
         // membros privados
         private static readonly string _chave = "ChavesMT.dss"; 
         private StringBuilder _arqChaveMT;
-        private Param _par;
+        private readonly Param _par;
         private readonly string _alim;
         private static SqlConnectionStringBuilder _connBuilder;
         private readonly bool _criaDispProtecao;
@@ -42,7 +42,7 @@ namespace ExportadorGeoPerdasDSS
                             + "from dbo.StoredChaveMT ";*/
 
                     command.CommandText = "select CodChvMT,CodPonAcopl1,CodPonAcopl2,CodFas,EstChv,Descr "
-                     + "from dbo.StoredChaveMT ";
+                     + "from " + _par._schema + "StoredChaveMT ";
 
                     // se modo reconfiguracao 
                     if (_modoReconf)

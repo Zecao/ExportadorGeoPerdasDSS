@@ -2,14 +2,14 @@
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Linq;
 
 namespace ExportadorArqDSS
 {
     class GeoPerdas2DSSFiles
     {
         // codbase
-        public static string _codBase = "2021124950"; //"2021129999"; //  "2021124950" //"2021124950" "2021124950" //"2020015050"; // "4950"; //"2020014950";
+        public static string _codBase = "2021124950"; //"2021124950"; //"2021129999"; //  "2021124950" //"2021124950" "2021124950" //"2020015050"; // "4950"; //"2020014950";
+        public static string _schema = "geo."; //"geo."; //"";
 
         // mes e ano para a geracao dos arquivos de carga BT e MT
         public static int _iMes = 12;
@@ -19,12 +19,10 @@ namespace ExportadorArqDSS
         public static bool _criaArqCoordenadas = true; // flag p/ criar arq coordenadas
         public static bool _criaDispProtecao = false; // flag p/ dispositivos de protecao (Recloser e Fuses) && taxas de falhas em lines
 
+        public static bool _modelo4condutores = false; //modelo 4 condutor BT
+
         // cria arquivo DSS com 2 alimentadores para uso da Reconfiguracao
         public static bool _genAllSubstation = false; // Generates all substation feeders as one. Uses the first feeder for directory name.
-
-        /* OLD CODE
-        // booleana se alimentadores atipicos
-        public static bool _alimAtipico = true;*/
 
         // arquivo txt com lista de alimentadores
         public static string _arqLstAlimentadores = "lstAlimentadores.m";
@@ -42,24 +40,33 @@ namespace ExportadorArqDSS
         public static string _feriado = "Feriado"; //arquivo de feriado
 
         // path do APP - CASA
-        public static readonly string _path = @"F:\DropboxZecao\Dropbox\0doutorado\0soft\0alimCemig\";        
-        //public static readonly string _path = @"F:\DropboxZecao\Dropbox\0doutorado\0soft\0alimCemig\1CemigDFeeders\";
-        //public static readonly string _path = @"F:\DropboxZecao\Dropbox\0doutorado\0soft\0alimCemig\1CemigDSAIDI\";
-
+        //public static readonly string _path = @"F:\DropboxZecao\Dropbox2018\Dropbox\01_4950_P\";
+        //public static readonly string _path = @"F:\DropboxZecao\Dropbox2018\Dropbox\01_4950_RECONF\";
+        //public static readonly string _path = @"F:\DropboxZecao\Dropbox2018\Dropbox\Dropbox\0doutorado\0soft\0alimCemig\1CemigDFeeders\";
+        //public static readonly string _path = @"F:\DropboxZecao\Dropbox2018\Dropbox\Dropbox\0doutorado\0soft\0alimCemig\1CemigDSAIDI\";
+        //public static readonly string _path = @"\0_alimTese\t2\";
 
         //CEMIG
         //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2021\01_4950_P\";
-        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2021\01_9999\";        
-        //public static readonly string _path = @"D:\Users\c055896.NETCEMIG\Desktop\01_4950_P\";
+        public static readonly string _path = @"D:\Users\c055896.NETCEMIG\Desktop\49502\";        
+        //public static readonly string _path = @"D:\Users\c055896.NETCEMIG\Desktop\01_4950\";
+        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2021\01_4950_TS\";
         //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2021\01_4950_atipicos_Leandro\";
-
+        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2021\01_4950_atipicos_UsinasLM1\";        
+        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2021\01_4950_atipicos_LeandroCopia2\";
+        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2021\01_4950_atipicos_SemUsinas\";
+        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2021\01_4950_BDGDDaimon\";
         //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2021\01_4950_reconf\";
 
+        // TODO FIX this hard coded 
+        // sub diretorio recursos permanentes
+        public static string _permRes = "0PermRes\\";
+
         // servidor SGBD
-        public static string _banco = "GEOPERDAS_2S2021"; //GEOPERDAS_2020 ""; //"GEOPERDAS_2019";  
+        public static string _banco = "GEO_SIGR_DBPERTEC01"; //"GEO_SIGR_DBPERTEC01"; //"GEOPERDAS_2S2021"; // GEO_SIGR_DBPERTEC01 "GEO_SIGR_PERDAS_2S2021"; //GEOPERDAS_2S2021 //GEOPERDAS_2020 ""; //"GEOPERDAS_2019";  
 
         // banco
-        public static string _dataSource = @"PWNBS-PERTEC01\PTEC"; //@"sa-corp-sql0"; // @"sa-corp-sql06\r";
+        public static string _dataSource = @"PWNBS-PERTEC01\PTEC"; //@"sa-corp-sql0";
 
         //Modelo PADRAO (GeoPerdas ANEEL)
         //OBS: Capacitor pode ser colocado na hora da execucao
@@ -67,25 +74,17 @@ namespace ExportadorArqDSS
         //    reatanciaTrafos: false);
 
         // sim3 modelo de carga PCONST
-        private static ModeloSDEE _SDEE = new ModeloSDEE(usarCondutoresSeqZero: false, utilizarCurvaDeCargaClienteMTIndividual: false, incluirCapacitoresMT: true, modeloCarga: "PCONST",
+        private readonly static ModeloSDEE _SDEE = new ModeloSDEE(usarCondutoresSeqZero: false, utilizarCurvaDeCargaClienteMTIndividual: false, incluirCapacitoresMT: false, modeloCarga: "PCONST",
            reatanciaTrafos: true);
 
-        // sim8 modelo de carga PCONST + curvaCliPrim Ind
-        //private static ModeloSDEE _SDEE = new ModeloSDEE(usarCondutoresSeqZero: false, utilizarCurvaDeCargaClienteMTIndividual: true, incluirCapacitoresMT: true, modeloCarga: "PCONST",
-        //   reatanciaTrafos: false);
-
         // FIM membros publicos -> parametros configuraveis usuario
-
-        // TODO FIX this hard coded 
-        // sub diretorio recursos permanentes
-        public static string _permRes = "0PermRes\\";
 
         //membros privados
         private static string _alim;
 
         //Param(string path, string permRes, string codBase, string pathAlim, string conjAlim, string trEM)
 
-        public static Param _par = new Param(_path, _permRes, _codBase,"","","");
+        public static Param _par = new Param(_path, _permRes, _codBase,"","","",_modelo4condutores,_schema);
 
         private static SqlConnectionStringBuilder _connBuilder;
 
@@ -103,7 +102,7 @@ namespace ExportadorArqDSS
         // utilizado por CargaMT e CargaBT
         private static Dictionary<string, List<string>> _curvasTipicasClientesMT;
 
-        static void Main(string[] args)
+        static void Main()
         {
             // parametros banco de dados
             _connBuilder = new SqlConnectionStringBuilder();
@@ -117,54 +116,55 @@ namespace ExportadorArqDSS
             // se modo reconfiguracao
             if (_genAllSubstation)
             {
-                // populates lstAlim with all feeders from txt file "Alimentadores.m"
-                
-                List<string> lstAlim = CemigFeeders.GetAllFeedersFromTxtFile(GetNomeArqLstAlimentadores());
-
-                // para cada SE da lista
-                foreach (string alim in lstAlim)
-                {
-                    // get substation
-                    string substation = System.Text.RegularExpressions.Regex.Replace(alim, @"[\d-]", string.Empty);
-
-                    //
-                    string lstAlimSE = CemigFeeders.GetAllFeedersFromSubstationString(substation, _connBuilder, _par._codBase);
-
-                    if (lstAlimSE == null)
-                    {
-                        Console.Write(substation + " não encontrado!\n");
-                        continue;
-                    }
-                    //
-                    CriaArquivosDSS(alim, lstAlimSE);
-               }
-
-                //OLD CODE OBS: UNE ALIM DA LISTA
-                /*
-                // lista de alimentadores
-                List<string> lstAlim = AlimentadoresCemig.getTodos(GetNomeArqLstAlimentadores());
-
-                // une alimentadores da lstAlim
-                uneStringAlim(lstAlim);
-
-                CriaArquivosDSS(lstAlim[0]);
-                 * */
+                GenSubstationDSSFiles();
             }
             else
             {
-                // lista de alimentadores
-                List<string> lstAlim = CemigFeeders.GetAllFeedersFromTxtFile(GetNomeArqLstAlimentadores());
-
-                // para cada alimentador da lista
-                foreach (string alim in lstAlim)
-                {
-                    CriaArquivosDSS(alim);
-                }
+                GeneratesFeedersDSSFiles();
             }
 
             Console.Write("Fim!");
             Console.ReadKey();
         }
+
+        // Generates entire substation
+        private static void GenSubstationDSSFiles()
+        {
+            // populates lstAlim with all feeders from txt file "Alimentadores.m"
+
+            List<string> lstAlim = CemigFeeders.GetAllFeedersFromTxtFile(GetNomeArqLstAlimentadores());
+
+            // para cada SE da lista
+            foreach (string alim in lstAlim)
+            {
+                // get substation
+                string substation = System.Text.RegularExpressions.Regex.Replace(alim, @"[\d-]", string.Empty);
+
+                //
+                string lstAlimSE = CemigFeeders.GetAllFeedersFromSubstationString(substation, _connBuilder, _par);
+
+                if (lstAlimSE == null)
+                {
+                    Console.Write(substation + " não encontrado!\n");
+                    continue;
+                }
+                //
+                CriaArquivosDSS(alim, lstAlimSE);
+            }
+        }
+
+        // Generates entire substation
+        private static void GeneratesFeedersDSSFiles()
+        {
+            // lista de alimentadores
+            List<string> lstAlim = CemigFeeders.GetAllFeedersFromTxtFile(GetNomeArqLstAlimentadores());
+
+            // para cada alimentador da lista
+            foreach (string alim in lstAlim)
+            {
+                CriaArquivosDSS(alim);
+            }
+        }        
 
         private static string GetNomeArqLstAlimentadores()
         {
@@ -221,7 +221,7 @@ namespace ExportadorArqDSS
             CriaCargaBTDSS();
             
             // Gerador MT
-            CriaGeradorMT();    
+            CriaGeradorMT(); 
             
             // arquivo cabecalho
             CriaCabecalhoDSS();
@@ -230,7 +230,7 @@ namespace ExportadorArqDSS
         private static void CarregaVariaveisAux()
         {
             // obtem Lista com numero de feriados mes X Mes
-            _numDiasFeriadoXMes = AuxFunc.Feriados(_ano, GetNomeArqFeriado());         
+            _numDiasFeriadoXMes = AuxFunc.Feriados(GetNomeArqFeriado());         
 
             // preenche Dic de soma Carga Mensal - Utilizado por CargaMT e CargaBT
             _somaCurvaCargaDiariaPU = XLSXFile.XLSX2Dictionary(GetNomeArqConsumoMensalPU()); 
@@ -286,7 +286,7 @@ namespace ExportadorArqDSS
         {
             GeradorMT oGerMT = new GeradorMT(_alim, _connBuilder, _par, _iMes);
 
-            // realiza consulta StoredReguladorMT 
+            // realiza consulta  
             _structElem._temGeradorMT = oGerMT.ConsultaBanco(_genAllSubstation);
 
             if (_structElem._temGeradorMT)
@@ -326,7 +326,7 @@ namespace ExportadorArqDSS
         // cria arquivo dss de segmentos de MT
         private static void CriaSegmentoMTDSS()
         {
-            SegmentoMT oSegMT = new SegmentoMT(_alim, _connBuilder, _SDEE, _par, _criaDispProtecao );
+            SegmentoMT oSegMT = new SegmentoMT(_alim, _connBuilder, _par, _criaDispProtecao );
 
             // realiza consulta StoredSegmentoMT 
             _structElem._temSegmentoMT = oSegMT.ConsultaStoredSegmentoMT(_genAllSubstation);

@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace ExportadorGeoPerdasDSS
 {
@@ -40,13 +37,13 @@ namespace ExportadorGeoPerdasDSS
                     if (_modoReconf)
                     {
                         command.CommandText = "select CodCapMT,CodPonAcopl,CodFas,PotNom_KVAr,kvnom " +
-                            "from dbo.CemigCapacitorMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                            "from " + _par._schema + "CemigCapacitorMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
                         command.CommandText = "select CodCapMT,CodPonAcopl,CodFas,PotNom_KVAr,kvnom " +
-                            "from dbo.CemigCapacitorMT where CodBase=@codbase and CodAlim=@CodAlim";
+                            "from " + _par._schema + "CemigCapacitorMT where CodBase=@codbase and CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _alim);
                     }

@@ -14,7 +14,6 @@ namespace ExportadorGeoPerdasDSS
         private static StrBoolElementosSDE _structElem;
         private static int _iMes;
         private static string _coordMT;
-        // private static bool _alimAtipico; // OLD CODE
 
         public CircMT(string alim, SqlConnectionStringBuilder connBuilder, Param par, bool modoReconfiguracao, 
             bool criaArqCoordenadas, StrBoolElementosSDE structElem, int iMes, string coordMT)
@@ -27,7 +26,6 @@ namespace ExportadorGeoPerdasDSS
             _structElem = structElem;
             _iMes = iMes;
             _coordMT = coordMT;
-            //_alimAtipico = alimAtipico; // OLD CODE
         }
 
         private static string GetNomeArqCoord()
@@ -80,7 +78,7 @@ namespace ExportadorGeoPerdasDSS
                 using (SqlCommand command = conn.CreateCommand())
                 {
                     // consulta
-                    command.CommandText = "select TenNom_kV,TenOpe_pu,CodPonAcopl from dbo.storedcircmt ";             
+                    command.CommandText = "select TenNom_kV,TenOpe_pu,CodPonAcopl from " + _par._schema + "storedcircmt ";             
 
                     // se modo reconfiguracao 
                     if (_modoReconf)
@@ -132,7 +130,7 @@ namespace ExportadorGeoPerdasDSS
         // Cria Str Energymeter e comandos adicionais
         private static string CriaStringMasterDSS_ParteB(SqlDataReader rs)
         {
-            string linha = "";
+            string linha;
 
             if (_modoReconf)
             {
@@ -142,7 +140,7 @@ namespace ExportadorGeoPerdasDSS
             }
             else
             {
-                linha = Environment.NewLine + "new energymeter.carga element=line." + "TR" + GetTrechoEnergyMeter(rs["CodPonAcopl"].ToString())
+                linha = Environment.NewLine + "new energymeter.carga element=line." + "SMT_" + GetTrechoEnergyMeter(rs["CodPonAcopl"].ToString())
                     + ",terminal=1" + Environment.NewLine; //OBS1
             }
 
@@ -157,7 +155,7 @@ namespace ExportadorGeoPerdasDSS
             linha += "Set MaxControlIter = 40" + Environment.NewLine;
 
             // 
-            linha += Environment.NewLine + "Solve mode=daily,hour=0,number=24,stepsize=1h";
+            linha += Environment.NewLine + "! Solve mode=daily,hour=0,number=24,stepsize=1h" + Environment.NewLine;
 
             if (_criaArqCoordenadas) 
             {
@@ -185,12 +183,14 @@ namespace ExportadorGeoPerdasDSS
 
         private static string CriaStrCircuit(SqlDataReader rs)
         {
+            //New "Circuit.AXAU03" basekv=13.8 pu=1.04 bus1="179780895" r1=0 x1=0.0001
             if (_modoReconf)
             {
                 return "new circuit.alim" + _alim
-                + " bus1=" + "BMT" + "FIC" + ".1.2.3"
+                + " bus1=" + "BMT" + "FIC" // OBS: + ".1.2.3"
                 + ",basekv=" + rs["TenNom_kV"].ToString()
                 + ",pu=" + rs["TenOpe_pu"].ToString()
+                + ",r1=0,x1=0.0001"
                 + Environment.NewLine + Environment.NewLine;
             }
             else
@@ -198,9 +198,10 @@ namespace ExportadorGeoPerdasDSS
                 // modelo
                 // new circuit.alimAFNU16 bus1=BMT155673172,basekv=13.8,pu=
                 return "new circuit.alim" + _alim
-                + " bus1=" + "BMT" + rs["CodPonAcopl"].ToString() + ".1.2.3" //OBS1
+                + " bus1=" + "BMT" + rs["CodPonAcopl"].ToString() // OBS: + ".1.2.3"
                 + ",basekv=" + rs["TenNom_kV"].ToString()
                 + ",pu=" + rs["TenOpe_pu"].ToString()
+                + ",r1=0,x1=0.0001"
                 + Environment.NewLine + Environment.NewLine; 
             }
         }
@@ -208,13 +209,8 @@ namespace ExportadorGeoPerdasDSS
         // funcao que cria a string do arquivo masterDSS
         private static string CriaStringMasterDSS_ParteA(SqlDataReader rs)
         {
-            string linha = "";
-
-            // cabeca alim
-            string cabAlim = rs["CodPonAcopl"].ToString();
-
             // limpa
-            linha = "clear" + Environment.NewLine;
+            string linha = "clear" + Environment.NewLine;
 
             // new circuit
             linha += CriaStrCircuit(rs);
@@ -289,7 +285,7 @@ namespace ExportadorGeoPerdasDSS
                 conn.Open();
                 using (SqlCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = "select CodSegmMT from dbo.StoredSegmentoMT where CodBase=@codbase and CodAlim=@CodAlim and CodPonAcopl1=@CodPonAcopl1";
+                    command.CommandText = "select CodSegmMT from " + _par._schema + "StoredSegmentoMT where CodBase=@codbase and CodAlim=@CodAlim and CodPonAcopl1=@CodPonAcopl1";
                     command.Parameters.AddWithValue("@codbase", _par._codBase);
                     command.Parameters.AddWithValue("@CodAlim", _alim);
                     command.Parameters.AddWithValue("@CodPonAcopl1", pel);

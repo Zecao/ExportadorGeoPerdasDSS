@@ -19,19 +19,17 @@ namespace ExportadorGeoPerdasDSS
         private static SqlConnectionStringBuilder _connBuilder;
         private StringBuilder _arqSegmentoMT;
         private StringBuilder _arqCoord;
-        private readonly ModeloSDEE _SDEE;
         private readonly Dictionary<string, double> _dicLineCodeFaultRate;
 
         public static Param _par;
 
         //public Param Param { get; }
 
-        public SegmentoMT(string alim, SqlConnectionStringBuilder connBuilder, ModeloSDEE sdee, Param par, bool criaDispProtecao)
+        public SegmentoMT(string alim, SqlConnectionStringBuilder connBuilder, Param par, bool criaDispProtecao)
         {
             _par = par;
             _alim = alim;
             _connBuilder = connBuilder;
-            _SDEE = sdee;
             _criaDispProtecao = criaDispProtecao;
 
             // preenche dictionary lineCode X FaultRate
@@ -62,7 +60,7 @@ namespace ExportadorGeoPerdasDSS
                 using (SqlCommand command = conn.CreateCommand())
                 {
                     command.CommandText = "select CodSegmMT,CodPonAcopl1,CodPonAcopl2,CodFas,CodCond,Comp_km,"
-                    + "CoordPAC1_x,CoordPAC1_y,CoordPAC2_x,CoordPAC2_y from dbo.StoredSegmentoMT";
+                    + "CoordPAC1_x,CoordPAC1_y,CoordPAC2_x,CoordPAC2_y from " + _par._schema + "StoredSegmentoMT";
 
                     if (_modoReconf)
                     {
@@ -89,12 +87,12 @@ namespace ExportadorGeoPerdasDSS
                             string numFases = AuxFunc.GetNumFases(rs["CodFas"].ToString());
                             string lineCode = rs["CodCond"].ToString();
 
-                            string linha = "new line." + "TR" + rs["CodSegmMT"] //OBS1:
+                            string linha = "new line." + "SMT_" + rs["CodSegmMT"] //OBS1:
                                 + " bus1=" + "BMT" + rs["CodPonAcopl1"] + fases //OBS1:
                                 + ",bus2=" + "BMT" + rs["CodPonAcopl2"] + fases //OBS1:
                                 + ",Phases=" + numFases
-                                + ",Linecode=" + lineCode
-                                + ",Length=" + rs["Comp_km"]
+                                + ",Linecode=" + lineCode + "_" + numFases
+                                + ",Length=" + rs["Comp_km"] 
                                 + ",Units=km";
 
                             if (_criaDispProtecao)
@@ -151,17 +149,20 @@ namespace ExportadorGeoPerdasDSS
 
                     if (_modoReconf)
                     {
-                        command.CommandText += "select CodPonAcopl1 as 'PAC', CoordPAC1_x,CoordPAC1_y from dbo.StoredSegmentoMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")" +
+                        command.CommandText += "select CodPonAcopl1 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._schema 
+                            + "StoredSegmentoMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")" +
                         " union " +
-                        "select CodPonAcopl2 as 'PAC', CoordPAC1_x,CoordPAC1_y from dbo.StoredSegmentoMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                        "select CodPonAcopl2 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._schema + "StoredSegmentoMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
 
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
-                        command.CommandText += "select CodPonAcopl1 as 'PAC', CoordPAC1_x,CoordPAC1_y from dbo.StoredSegmentoMT where CodBase=@codbase and CodAlim=@CodAlim" +
-                        " union " +
-                        "select CodPonAcopl2 as 'PAC', CoordPAC1_x,CoordPAC1_y from dbo.StoredSegmentoMT where CodBase=@codbase and CodAlim=@CodAlim";
+                        command.CommandText += "select CodPonAcopl1 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._schema
+                            + "StoredSegmentoMT where CodBase=@codbase and CodAlim=@CodAlim"
+                            + " union "
+                            + "select CodPonAcopl2 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._schema
+                            + "StoredSegmentoMT where CodBase=@codbase and CodAlim=@CodAlim";
 
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _alim);
@@ -181,6 +182,49 @@ namespace ExportadorGeoPerdasDSS
                             _arqCoord.Append(linhaPAC1);
                         }
                     }
+
+                }
+
+                using (SqlCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = "";
+
+                    if (_modoReconf)
+                    {
+                        command.CommandText += "select CodPonAcopl1 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._schema
+                            + "StoredSegmentoMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")" +
+                        " union " +
+                        "select CodPonAcopl2 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._schema + "StoredSegmentoMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+
+                        command.Parameters.AddWithValue("@codbase", _par._codBase);
+                    }
+                    else
+                    {
+                        command.CommandText += "select CodPonAcopl1 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._schema
+                            + "StoredSegmentoBT where CodBase=@codbase and CodAlim=@CodAlim"
+                            + " union "
+                            + "select CodPonAcopl2 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._schema
+                            + "StoredSegmentoBT where CodBase=@codbase and CodAlim=@CodAlim";
+
+                        command.Parameters.AddWithValue("@codbase", _par._codBase);
+                        command.Parameters.AddWithValue("@CodAlim", _alim);
+                    }
+                    using (var rs = command.ExecuteReader())
+                    {
+                        // verifica ocorrencia de elemento no banco
+                        if (!rs.HasRows)
+                        {
+                            return false;
+                        }
+
+                        while (rs.Read())
+                        {
+                            string linhaPAC1 = "BBT" + rs["PAC"] + "," + rs["CoordPAC1_x"] + "," + rs["CoordPAC1_y"] + Environment.NewLine;
+
+                            _arqCoord.Append(linhaPAC1);
+                        }
+                    }
+
                 }
 
                 //fecha conexao
@@ -229,7 +273,7 @@ namespace ExportadorGeoPerdasDSS
 
                 using (SqlCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = "select CodAlim,CodPonAcopl from Storedcircmt where codbase = @codbase "
+                    command.CommandText = "select CodAlim,CodPonAcopl from " + _par._schema + "Storedcircmt where codbase = @codbase "
                                         + "and codalim in ("+ _par._conjAlim  + ")";
                     command.Parameters.AddWithValue("@codbase", _par._codBase);
 

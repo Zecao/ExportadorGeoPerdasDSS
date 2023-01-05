@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace ExportadorGeoPerdasDSS
 {
@@ -13,7 +11,7 @@ namespace ExportadorGeoPerdasDSS
         private static readonly string _cargaMT = "CargaMT_";
         private static int _iMes;
         private static string _ano;
-        private Param _par;
+        private readonly Param _par;
         private readonly string _alim;
         private static SqlConnectionStringBuilder _connBuilder;
         private StringBuilder _arqSegmentoBT;
@@ -63,12 +61,12 @@ namespace ExportadorGeoPerdasDSS
                     // se modo reconfiguracao 
                     if (_modoReconf)
                     {
-                        command.CommandText += "dbo.StoredCargaMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                        command.CommandText += _par._schema + "StoredCargaMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
-                        command.CommandText += "dbo.StoredCargaMT where CodBase=@codbase and CodAlim=@CodAlim";
+                        command.CommandText += _par._schema + "StoredCargaMT where CodBase=@codbase and CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _alim);
                     }               
@@ -103,53 +101,8 @@ namespace ExportadorGeoPerdasDSS
                                 continue;
                             }
 
-                            string fases = AuxFunc.GetFasesDSS(rs["CodFas"].ToString());
-                            string numFases = AuxFunc.GetNumFases(rs["CodFas"].ToString());
-                            string tensaoFF = AuxFunc.GetTensaoFF(rs["TnsLnh_kV"].ToString()); 
-                            
                             //
-                            string demanda = AuxFunc.CalcDemanda(consumoMes, _iMes, _ano, rs["TipCrvaCarga"].ToString(), _numDiasFeriadoXMes, _somaCurvaCargaDiariaPU);
-
-                            string linha ="";
-
-                            //
-                            if (_SDEE._utilizarCurvaDeCargaClienteMTIndividual)
-                            {
-
-                                // se modelo de carga ANEEL
-                                switch (_SDEE._modeloCarga)
-                                {
-                                    case "ANEEL":
-
-                                        linha = CriaDSSCargaMTcomCurvaAneel(rs, demanda, fases, numFases, tensaoFF);
-
-                                        break;
-
-                                    case "PCONST":
-
-                                        linha = CriaDSSCargaMTcomCurva(rs, demanda, fases, numFases, tensaoFF);
-
-                                        break;
-                                }
-                            }
-                            else 
-                            {
-                                // se modelo de carga ANEEL
-                                switch (_SDEE._modeloCarga)
-                                {
-                                    case "ANEEL":
-
-                                        linha = CriaDSSCargaMTAneel(rs, demanda, fases, numFases, tensaoFF);
-
-                                        break;
-
-                                    case "PCONST":
-
-                                        linha = CriaDSSCargaPconst(rs, demanda, fases, numFases, tensaoFF);
-
-                                        break;
-                                }
-                            }                      
+                            string linha = CriaStringCargaMT(rs, consumoMes);                             
 
                             _arqSegmentoBT.Append(linha);
                         }
@@ -160,6 +113,57 @@ namespace ExportadorGeoPerdasDSS
                 conn.Close();
             }
             return true;
+        }
+
+        // CriaStringCargaMT
+        private string CriaStringCargaMT(SqlDataReader rs, string consumoMes)
+        {
+            string fases = AuxFunc.GetFasesDSS(rs["CodFas"].ToString());
+            string numFases = AuxFunc.GetNumFases(rs["CodFas"].ToString());
+            string tensaoFF = AuxFunc.GetTensaoFF(rs["TnsLnh_kV"].ToString());
+
+            //
+            string demanda = AuxFunc.CalcDemanda(consumoMes, _iMes, _ano, rs["TipCrvaCarga"].ToString(), _numDiasFeriadoXMes, _somaCurvaCargaDiariaPU);
+
+            string linha="";
+            //
+            if (_SDEE._utilizarCurvaDeCargaClienteMTIndividual)
+            {
+                // se modelo de carga ANEEL
+                switch (_SDEE._modeloCarga)
+                {
+                    case "ANEEL":
+
+                        linha = CriaDSSCargaMTcomCurvaAneel(rs, demanda, fases, numFases, tensaoFF);
+
+                        break;
+
+                    case "PCONST":
+
+                        linha = CriaDSSCargaMTcomCurva(rs, demanda, fases, numFases, tensaoFF);
+
+                        break;
+                }
+            }
+            else
+            {
+                // se modelo de carga ANEEL
+                switch (_SDEE._modeloCarga)
+                {
+                    case "ANEEL":
+
+                        linha = CriaDSSCargaMTAneel(rs, demanda, fases, numFases, tensaoFF);
+
+                        break;
+
+                    case "PCONST":
+
+                        linha = CriaDSSCargaPconst(rs, demanda, fases, numFases, tensaoFF);
+
+                        break;
+                }
+            }
+            return linha;
         }
 
         private string CriaDSSCargaMTcomCurvaAneel(SqlDataReader rs, string demanda, string fases, string numFases, string tensaoFF)

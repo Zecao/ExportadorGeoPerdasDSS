@@ -10,7 +10,6 @@ namespace ExportadorGeoPerdasDSS
 {
     class XLSXFile
     {
-
         //
         public static List<string[]>LeCSV(string fileName, char separador=',')
         {
@@ -30,7 +29,7 @@ namespace ExportadorGeoPerdasDSS
         }
 
         // Le coluna CSV do arquivo
-        public static List<string> Le1ColunaCSV(string fileName, char separador = ',')
+        public static List<string> Le1ColunaCSV(string fileName)
         {
             // verifica existencia de arquivo
             if (File.Exists(fileName))
@@ -223,8 +222,7 @@ namespace ExportadorGeoPerdasDSS
         //
         private static double[,] EliminaNan(double[,] entrada)
         {
-
-            List<double> temp = new List<double>(); ;
+            List<double> temp;
             List<List<double>> aux = new List<List<double>>();
             List<List<double>> aux2 = new List<List<double>>();
             int linhas = entrada.GetLength(0);
@@ -314,7 +312,7 @@ namespace ExportadorGeoPerdasDSS
         }
 
         //
-        public static Dictionary<string, List<string>> XLSX2DictString(string nomeArquivoCompleto, int coluna = 2)
+        public static Dictionary<string, List<string>> XLSX2DictString(string nomeArquivoCompleto)
         {
             Dictionary<string, List<string>> saida = new Dictionary<string, List<string>>();
 

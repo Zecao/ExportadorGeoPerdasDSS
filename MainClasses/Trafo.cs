@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace ExportadorGeoPerdasDSS
 {
@@ -12,10 +9,10 @@ namespace ExportadorGeoPerdasDSS
         // membros privados
         private static readonly string _trafos = "Transformadores.dss";
         private StringBuilder _arqTrafo;
-        private Param _par;
+        private readonly Param _par;
         private readonly string _alim;
         private static SqlConnectionStringBuilder _connBuilder;
-        private ModeloSDEE _SDEE;
+        private readonly ModeloSDEE _SDEE;
 
         public Trafo(string alim, SqlConnectionStringBuilder connBuilder, Param par, ModeloSDEE SDEE)
         {
@@ -41,7 +38,7 @@ namespace ExportadorGeoPerdasDSS
                 {
                     command.CommandText = "select Propr,CodTrafo,CodPonAcopl1,CodPonAcopl2,PotNom_kVA,TipTrafo,CodFasPrim,CodFasSecu,CodFasTerc,TenSecu_kV,"
                         + "Tap_pu,[Resis_%],[ReatHL_%],[ReatHT_%],[ReatLT_%],[PerdVz_%],TnsLnh1_kV,CodBnc,Descr"
-                        + " from dbo.StoredTrafoMTMTMTBT ";
+                        + " from " + _par._schema + "StoredTrafoMTMTMTBT ";
 
                     // se modo reconfiguracao 
                     if (_modoReconf)
@@ -66,12 +63,13 @@ namespace ExportadorGeoPerdasDSS
 
                         while (rs.Read())
                         {
+                            /* // TODO
                             //skipa trafos de terceiros
                             if (rs["Propr"].ToString().Equals("TC"))
                             {
                                 // Console.Write("trafo de terceiros: " + rs["CodTrafo"].ToString() + Environment.NewLine );
                                 continue;
-                            }
+                            }*/
 
                             string barraBT = rs["CodPonAcopl2"].ToString();
                             string pot = rs["PotNom_kVA"].ToString();
@@ -85,6 +83,14 @@ namespace ExportadorGeoPerdasDSS
                             string faseDSS = AuxFunc.GetFasesDSS(rs["CodFasPrim"].ToString());
 
                             string CodTrafo = rs["CodTrafo"].ToString();
+
+                            /* // DEBUG
+                            if (CodTrafo.Equals("308866"))
+                            {
+                                int teste=0;
+                            }*/
+
+                            string Descr = rs["Descr"].ToString();
 
                             string linha;
 
@@ -104,7 +110,7 @@ namespace ExportadorGeoPerdasDSS
                                     linha = CriaStringPostoTransformador(rs, faseDSS, barraBT, tensaoFF, pot);
                                     break;
                                 default:
-                                    linha = CriaStringTrafoTrifasico(rs, faseDSS, barraBT, tensaoFF, pot);
+                                    linha = CriaStringTrafoTrifasico(rs, faseDSS, barraBT, tensaoFF, pot, Descr);
                                     break;
                             }
                             _arqTrafo.Append(linha);
@@ -154,7 +160,6 @@ new transformer.873922PT_1 Phases=1,Windings=2,Buses=[BMT174122367.1.2 BMT174122
 ! !abaixador 
 new transformer.873969PT_1 Phases=1,Windings=2,Buses=[BMT174122333.1.2 BMT174122332.1.0],Conns=[delta wye],kvs=[34.5 7.97]
         */
-
         private string CriaStringPostoTransformador(SqlDataReader rs, string faseDSS, string barraBT, string fasePrimDSS, string pot)
         {
             string faseSecuDSS = AuxFunc.GetFasesDSS(rs["CodFasSecu"].ToString());
@@ -163,7 +168,7 @@ new transformer.873969PT_1 Phases=1,Windings=2,Buses=[BMT174122333.1.2 BMT174122
             string tensaoSec = TensaoLinha2TensaoFase(rs["TenSecu_kV"].ToString()); 
 
             // 
-            string linha = "new transformer." + rs["CodTrafo"].ToString() + "_" + rs["CodBnc"].ToString()
+            string linha = "new transformer.TRF_" + rs["CodTrafo"].ToString() + "_" + rs["CodBnc"].ToString()
                  + " Phases=1"
                  + ",Windings=2"
                  + ",Buses=[" + "BMT" + rs["CodPonAcopl1"].ToString() + faseDSS 
@@ -188,55 +193,118 @@ new transformer.873969PT_1 Phases=1,Windings=2,Buses=[BMT174122333.1.2 BMT174122
         // cria string trafo trifasico
         private string CriaStringTrafoMonofasico(SqlDataReader rs, string faseDSS, string barraBT, string tensaoFN, string pot)
         {
-            string linha = "new transformer." + rs["CodTrafo"].ToString()
+            string linha;
+            if (!_par._modelo4condutores)
+            {
+                linha = "new transformer.TRF_" + rs["CodTrafo"].ToString() + "A"
+                    + " Phases=1"
+                    + ",Windings=3"
+                    + ",Buses=[" + "BMT" + rs["CodPonAcopl1"].ToString() + faseDSS //OBS1
+                    + " " + barraBT + ".1.0 " + barraBT + ".0.2]"  //OBS1 + "BBT" //OBS: atenção para a polaridade .0.2
+                    + ",Conns=[wye wye wye]"
+                    + ",kvs=[" + tensaoFN + " " + "0.12 0.12]"
+                    + ",kvas=[" + pot + " " + pot + " " + pot + "]"
+                    + ",Taps=[1," + rs["Tap_pu"].ToString() + "," + rs["Tap_pu"].ToString() + "]";
+
+                // se modo reatancia
+                if (_SDEE._reatanciaTrafos)
+                {
+                    linha += ",XHL=" + rs["ReatHL_%"].ToString()
+                    + ",XHT=" + rs["ReatHT_%"].ToString()
+                    + ",XLT=" + rs["ReatLT_%"].ToString();
+                }
+
+                linha += ",%loadloss=" + rs["Resis_%"].ToString()
+                    + ",%noloadloss=" + rs["PerdVz_%"].ToString() + Environment.NewLine;
+            }
+            else
+            {
+                /*
+ New "Transformer.TRF_1042516A" phases=1 windings=3 buses=["119948602.2" "107459020.1.4" "107459020.4.2"] conns=[Wye Wye Wye] kvs=[7.96743371481684 0.12 0.12] taps=[1 1 1] kvas=[10 10 10] %loadloss=1.8 %noloadloss=0.45
+ New "Reactor.TRF_1042516A_R" phases=1 bus1=107459020.4 R=15 X=0 basefreq=60 */
+
+                linha = "new transformer.TRF_" + rs["CodTrafo"].ToString() + "A"
                 + " Phases=1"
                 + ",Windings=3"
-                + ",Buses=[" + "BMT" + rs["CodPonAcopl1"].ToString() + faseDSS //OBS1
-                + " " + "BBT" + barraBT + ".1.0 " + "BBT" + barraBT + ".0.2]"  //OBS1 //OBS: atenção para a polaridade .0.2
+                + ",Buses=[" + "BMT" + rs["CodPonAcopl1"].ToString() + faseDSS //
+                + " "  + barraBT + ".1.4 "  + barraBT + ".4.2]"  //+ "BBT" //+ "BBT" : atenção para a polaridade .0.2
                 + ",Conns=[wye wye wye]"
                 + ",kvs=[" + tensaoFN + " " + "0.12 0.12]"
                 + ",kvas=[" + pot + " " + pot + " " + pot + "]"
                 + ",Taps=[1," + rs["Tap_pu"].ToString() + "," + rs["Tap_pu"].ToString() + "]";
 
-            // se modo reatancia
-            if (_SDEE._reatanciaTrafos)
-            {
-                linha += ",XHL=" + rs["ReatHL_%"].ToString()
-                + ",XHT=" + rs["ReatHT_%"].ToString()
-                + ",XLT=" + rs["ReatLT_%"].ToString();
-            }
+                // se modo reatancia
+                if (_SDEE._reatanciaTrafos)
+                {
+                    linha += ",XHL=" + rs["ReatHL_%"].ToString()
+                    + ",XHT=" + rs["ReatHT_%"].ToString()
+                    + ",XLT=" + rs["ReatLT_%"].ToString();
+                }
 
-            linha += ",%loadloss=" + rs["Resis_%"].ToString()
-                + ",%noloadloss=" + rs["PerdVz_%"].ToString() + Environment.NewLine;
+                linha += ",%loadloss=" + rs["Resis_%"].ToString()
+                    + ",%noloadloss=" + rs["PerdVz_%"].ToString() + Environment.NewLine;
+
+                linha += "New Reactor." + rs["CodTrafo"].ToString() + "R" + " phases=1,bus1="  + barraBT + ".4,R=15,X=0,basefreq=60" + Environment.NewLine; //+"BBT"
+            }
 
             return linha;
         }
         
         // cria string trafo trifasico
-        private string CriaStringTrafoTrifasico(SqlDataReader rs, string faseDSS, string barraBT, string tensaoFF, string pot)
+        private string CriaStringTrafoTrifasico(SqlDataReader rs, string faseDSS, string barraBT, string tensaoFF, string pot, string descr)
         {
             // TODO OBS: comentado pois alterava a tensao de linha correta do PT 34,5 kV 
             //tensaoFF = TrataTensaoLinhaANEEL(tensaoFF,"4");
+            string linha;
 
-            //
-            string linha = "new transformer." + rs["CodTrafo"].ToString()
-                 + " Phases=3"
-                 + ",Windings=2"
-                 + ",Buses=[" + "BMT" + rs["CodPonAcopl1"].ToString() + faseDSS //OBS1
-                 + " " + "BBT" + barraBT + ".1.2.3.0]" //OBS1
-                 + ",Conns=[delta wye]"
-                 + ",kvs=[" + tensaoFF + " " + "0.22]"
-                 + ",kvas=[" + pot + " " + pot + "]"
-                 + ",Taps=[1," + rs["Tap_pu"].ToString() + "]";
-
-            // se modo reatancia
-            if (_SDEE._reatanciaTrafos)
+            if (!_par._modelo4condutores)
             {
-                linha += ",XHL=" + rs["ReatHL_%"].ToString();
-            }
+                //
+                linha = "new transformer.TRF_" + rs["CodTrafo"].ToString()
+                     + " Phases=3"
+                     + ",Windings=2"
+                     + ",Buses=[" + "BMT" + rs["CodPonAcopl1"].ToString() + faseDSS //OBS1
+                     + " " + barraBT + ".1.2.3.0]" //OBS1 + "BBT"
+                     + ",Conns=[delta wye]"
+                     + ",kvs=[" + tensaoFF + " " + "0.22]"
+                     + ",kvas=[" + pot + " " + pot + "]"
+                     + ",Taps=[1," + rs["Tap_pu"].ToString() + "]";
 
-            linha += ",%loadloss=" + rs["Resis_%"].ToString()
-                 + ",%noloadloss=" + rs["PerdVz_%"].ToString() + Environment.NewLine;
+                // se modo reatancia
+                if (_SDEE._reatanciaTrafos)
+                {
+                    linha += ",XHL=" + rs["ReatHL_%"].ToString();
+                }
+
+                linha += ",%loadloss=" + rs["Resis_%"].ToString()
+                     + ",%noloadloss=" + rs["PerdVz_%"].ToString() 
+                     + " !" + descr + Environment.NewLine;
+            }
+            else
+            {
+                //
+                linha = "new transformer.TRF_" + rs["CodTrafo"].ToString()
+                     + " Phases=3"
+                     + ",Windings=2"
+                     + ",Buses=[" + "BMT" + rs["CodPonAcopl1"].ToString() + faseDSS //
+                     + " "  + barraBT + ".1.2.3.4]" //+ "BBT"
+                     + ",Conns=[delta wye]"
+                     + ",kvs=[" + tensaoFF + " " + "0.22]"
+                     + ",kvas=[" + pot + " " + pot + "]"
+                     + ",Taps=[1," + rs["Tap_pu"].ToString() + "]";
+
+                // se modo reatancia
+                if (_SDEE._reatanciaTrafos)
+                {
+                    linha += ",XHL=" + rs["ReatHL_%"].ToString();
+                }
+
+                linha += ",%loadloss=" + rs["Resis_%"].ToString()
+                     + ",%noloadloss=" + rs["PerdVz_%"].ToString()
+                     + " !" + descr + Environment.NewLine; 
+
+                linha += "New Reactor." + rs["CodTrafo"].ToString() + "R" + " phases=1,bus1=" + barraBT + ".4,R=15,X=0,basefreq=60" + Environment.NewLine; //+"BBT"
+            }
 
             return linha;
         }

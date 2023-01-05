@@ -99,11 +99,11 @@ namespace ExportadorGeoPerdasDSS
         }
 
         //Get all feeders in a string separated by ',' from a substation name
-        public static string GetAllFeedersFromSubstationString(string sub, SqlConnectionStringBuilder con, string codBase)
+        public static string GetAllFeedersFromSubstationString(string sub, SqlConnectionStringBuilder con, Param par)
         {
             // OBS: a SE deve ter nome
             // obtem lstAlim da SE
-            List<string> lstAlim = GetLstAlimSE(sub, con, codBase);
+            List<string> lstAlim = GetLstAlimSE(sub, con, par);
            
             if (lstAlim.Count == 0)
             {
@@ -117,9 +117,6 @@ namespace ExportadorGeoPerdasDSS
         private static string UneStringAlim(List<string> lstAlim)
         {
             string conjAlims;
-
-            // primeiro alimentador do conjunto
-            string primeiroAlim = lstAlim[0];
 
             // inicializacao 
             conjAlims = "'";
@@ -141,11 +138,11 @@ namespace ExportadorGeoPerdasDSS
             return conjAlims;
         }
 
-        private static List<string> GetLstAlimSE(string codSE, SqlConnectionStringBuilder _connBuilder, string CodBase)
+        private static List<string> GetLstAlimSE(string codSE, SqlConnectionStringBuilder _connBuilder, Param par )
         {
             List<string> lstAlim = new List<string>();
 
-            using (SqlConnection conn = new SqlConnection(_connBuilder.ToString()))
+             using (SqlConnection conn = new SqlConnection(_connBuilder.ToString()))
             {
                 // abre conexao 
                 conn.Open();
@@ -153,9 +150,9 @@ namespace ExportadorGeoPerdasDSS
                 //consulta a banco 
                 using (SqlCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = "select CodAlim from dbo.StoredCircMT "
+                    command.CommandText = "select CodAlim from " + par._schema + "StoredCircMT "
                         + "where CodBase=@codbase and CodSub=@codSe";
-                    command.Parameters.AddWithValue("@codbase", CodBase);
+                    command.Parameters.AddWithValue("@codbase", par._codBase);
                     command.Parameters.AddWithValue("@codSe", codSE);
 
                     using (var rs = command.ExecuteReader())

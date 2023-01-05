@@ -2,9 +2,6 @@
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ExportadorGeoPerdasDSS
 {
@@ -66,10 +63,10 @@ namespace ExportadorGeoPerdasDSS
         }
 
         // retorna string de fases padrao OpenDSS de acordo com a fase 
-        public static string GetFasesDSS(string codFase)
+        public static string GetFasesDSS(string codFase, bool _modelo4condutores = false)
         {
             string ret;
-
+                       
             switch (codFase)
             {
                 case "ABC":
@@ -103,7 +100,7 @@ namespace ExportadorGeoPerdasDSS
                     ret = ".1.2.0";
                     break;
                 case "CAN":
-                    ret = ".1.3.0";
+                    ret = ".3.1.0";
                     break;
                 case "BCN":
                     ret = ".2.3.0";
@@ -121,6 +118,12 @@ namespace ExportadorGeoPerdasDSS
                     ret = ".1.2.3";
                     break;
             }
+
+            if (_modelo4condutores)
+            {
+                ret = ret.Replace("0","4");
+            }
+
             return ret;
         }
 
@@ -186,9 +189,8 @@ namespace ExportadorGeoPerdasDSS
             //Pega a potência ativa
             double demanda = dConsMes / somaConsumoMensalPU;
 
-
             // OBS: divide demanda por 2, uma vez que o modelo atual aloca 2 cargas para cada consumidor
-            demanda = demanda / 2;
+            demanda /= 2;
 
             // retorna demanda
             return demanda.ToString("0.#####");
@@ -221,7 +223,7 @@ namespace ExportadorGeoPerdasDSS
 
 
         //Pega os feriados do ano
-        public static List<List<int>> Feriados(string ano, string arqFeriados)
+        public static List<List<int>> Feriados(string arqFeriados)
         {
             List<List<int>> feriados = new List<List<int>>();
 
@@ -410,6 +412,7 @@ namespace ExportadorGeoPerdasDSS
         // que ocorre com a execucao da SP Principal no GeoPerdas 
         internal static string GetTensaoFF(string tensaoFF)
         {
+            // FIX ME
             // tensao FF vazia (ex. trafo nao visitado)
             if (tensaoFF.Equals(""))
             {
@@ -417,7 +420,7 @@ namespace ExportadorGeoPerdasDSS
             }
             return tensaoFF;
 
-            /* // OLD CODE
+            /* OLD CODE
             // nivel de tensao default
             string ret = "13.8";
 

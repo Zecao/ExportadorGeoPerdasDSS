@@ -23,7 +23,6 @@ namespace ExportadorGeoPerdasDSS
             _connBuilder = connBuilder;
         }
 
-
         public bool ConsultaBanco(bool _modoReconf)
         {
             _arqGeradorMT = new StringBuilder();
@@ -43,13 +42,13 @@ namespace ExportadorGeoPerdasDSS
                     // se modo reconfiguracao 
                     if (_modoReconf)
                     {
-                        command.CommandText += "from dbo.StoredGeradorMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                        command.CommandText += "from " + _par._schema + "StoredGeradorMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
 
                     }
                     else
                     {
-                        command.CommandText += "from dbo.StoredGeradorMT where CodBase=@codbase and CodAlim=@CodAlim";
+                        command.CommandText += "from " + _par._schema + "StoredGeradorMT where CodBase=@codbase and CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _alim);
                     }
@@ -73,8 +72,13 @@ namespace ExportadorGeoPerdasDSS
                             // Obtem a geracao de acordo com o mes
                             string geracaoMes = AuxFunc.GetConsumoMesCorrente(rs, _iMes);
 
+                            // se consumo = 0, nao gera string do gerador 
+                            double gerMes_d = double.Parse(geracaoMes);
+                            if (gerMes_d == 0.0)
+                                continue;
+
                             // usina
-                            linha += "new generator." + CodGeraMT
+                                linha += "new generator." + CodGeraMT
                             + " bus1=" + "BMT" + rs["CodPonAcopl"] + ".1.2.3"
                             + ",Phases=3"
                             + ",kv=" + rs["TnsLnh_kV"].ToString()

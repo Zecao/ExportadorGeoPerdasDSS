@@ -2,14 +2,13 @@
 using System.Data.SqlClient;
 using System.Text;
 
-
 namespace ExportadorGeoPerdasDSS
 {
     class RamalBT
     {
         // membros privados
         private static readonly string _ramais = "Ramais.dss";
-        private Param _par;
+        private readonly Param _par;
         private readonly string _alim;
         private static SqlConnectionStringBuilder _connBuilder;
         private StringBuilder _arqSegmentoBT;
@@ -38,13 +37,13 @@ namespace ExportadorGeoPerdasDSS
                     // se modo reconfiguracao 
                     if (_modoReconf)
                     {
-                        command.CommandText = "select CodRmlBT,CodPonAcopl1,CodPonAcopl2,CodFas,CodCond,Comp_km,Descr from dbo.StoredRamalBT "
+                        command.CommandText = "select CodRmlBT,CodPonAcopl1,CodPonAcopl2,CodFas,CodCond,Comp_km,Descr from " + _par._schema + "StoredRamalBT "
                             +"where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
-                        command.CommandText = "select CodRmlBT,CodPonAcopl1,CodPonAcopl2,CodFas,CodCond,Comp_km,Descr from dbo.StoredRamalBT "
+                        command.CommandText = "select CodRmlBT,CodPonAcopl1,CodPonAcopl2,CodFas,CodCond,Comp_km,Descr from " + _par._schema + "StoredRamalBT "
                             +"where CodBase=@codbase and CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _alim);
@@ -60,31 +59,51 @@ namespace ExportadorGeoPerdasDSS
 
                         while (rs.Read())
                         {
+                            // OLD CODE
                             // comprimento ramal interno
-                            string compRmlInt = rs["Descr"].ToString();
-
-                            string compRml = rs["Comp_km"].ToString();
-                            
+                            //string compRmlInt = "3";
                             /* // TODO: aumento de 3metros do ramal
-                            double compRml_D = Double.Parse(compRml) + 0.003;
+                             double compRml_D = Double.Parse(compRml) + 0.003;
 
-                            compRml = compRml_D.ToString();*/
-                            
-                            // atribui compRml interno ao 
-                            if (!compRmlInt.Equals(""))
-                            {
-                                compRml = compRmlInt;
-                            }
+                             compRml = compRml_D.ToString();
 
-                            string fases = AuxFunc.GetFasesDSS(rs["CodFas"].ToString());
+                             // atribui compRml interno ao 
+                             if (!compRmlInt.Equals(""))
+                             {
+                                 compRml = compRmlInt;
+                             }
+                             */
+
+                            string compRml = rs["Comp_km"].ToString();                          
+                            string fases = AuxFunc.GetFasesDSS(rs["CodFas"].ToString(), _par._modelo4condutores);
                             string numFases = AuxFunc.GetNumFases(rs["CodFas"].ToString());
-                            string linha = "new line.RML" + rs["CodRmlBT"].ToString()
-                                + " bus1=" + "BBT" + rs["CodPonAcopl1"] + fases //OBS1
-                                + ",bus2=" + "RML" +rs["CodPonAcopl2"] + fases //OBS1
+                            string linha;
+
+                            //NEW CODE
+                            if ( ! _par._modelo4condutores )
+                            {
+                                linha = "new line.RBT_" + rs["CodRmlBT"].ToString()
+                                    + " bus1=" + rs["CodPonAcopl1"] + fases //+ "BBT" 
+                                    + ",bus2=" + rs["CodPonAcopl2"] + fases //+ "RML"
+                                    + ",Phases=" + numFases
+                                    + ",Linecode=" + rs["CodCond"].ToString() + "_" + numFases // OBS: altera linecode
+                                    + ",Length=" + compRml
+                                    + ",Units=km" + Environment.NewLine;
+                            }
+                            else
+                            {
+                                double numFasesD = double.Parse(numFases);
+                                numFasesD++;
+                                numFases = numFasesD.ToString();
+                                
+                                linha = "new line.RBT_" + rs["CodRmlBT"].ToString()
+                                + " bus1=" + rs["CodPonAcopl1"] + fases //+ "BBT"
+                                + ",bus2=" + rs["CodPonAcopl2"] + fases //+ "RML"
                                 + ",Phases=" + numFases
-                                + ",Linecode=" + rs["CodCond"].ToString()
+                                + ",Linecode=" + rs["CodCond"].ToString() + "_" + numFases // OBS: altera linecode
                                 + ",Length=" + compRml
                                 + ",Units=km" + Environment.NewLine;
+                            }
 
                             _arqSegmentoBT.Append(linha);
                         }

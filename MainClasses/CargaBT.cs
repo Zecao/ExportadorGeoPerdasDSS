@@ -11,7 +11,7 @@ namespace ExportadorGeoPerdasDSS
         private static readonly string _cargaBT = "CargaBT_";
         private static int _iMes;
         private static string _ano;
-        private Param _par;
+        private readonly Param _par;
         private readonly string _alim;
         private static SqlConnectionStringBuilder _connBuilder;
         private StringBuilder _arqSegmentoBT;
@@ -53,7 +53,7 @@ namespace ExportadorGeoPerdasDSS
                     {
                         command.CommandText = "select TipTrafo,TenSecu_kV,CodConsBT,CodFas,CodPonAcopl,TipCrvaCarga,EnerMedid01_MWh,EnerMedid02_MWh,EnerMedid03_MWh,EnerMedid04_MWh,EnerMedid05_MWh,EnerMedid06_MWh,EnerMedid07_MWh," +
                             "EnerMedid08_MWh,EnerMedid09_MWh,EnerMedid10_MWh,EnerMedid11_MWh,EnerMedid12_MWh from " +
-                            "dbo.StoredCargaBT as car inner join dbo.StoredTrafoMTMTMTBT as tr on tr.CodTrafo = car.CodTrafo " +
+                            _par._schema + "StoredCargaBT as car inner join " + _par._schema + "StoredTrafoMTMTMTBT as tr on tr.CodTrafo = car.CodTrafo " +
                             "where car.CodBase=@codbase and tr.CodBase=@codbase and car.CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
@@ -61,7 +61,7 @@ namespace ExportadorGeoPerdasDSS
                     {
                         command.CommandText = "select TipTrafo,TenSecu_kV,CodConsBT,CodFas,CodPonAcopl,TipCrvaCarga,EnerMedid01_MWh,EnerMedid02_MWh,EnerMedid03_MWh,EnerMedid04_MWh,EnerMedid05_MWh,EnerMedid06_MWh,EnerMedid07_MWh," +
                             "EnerMedid08_MWh,EnerMedid09_MWh,EnerMedid10_MWh,EnerMedid11_MWh,EnerMedid12_MWh from " +
-                            "dbo.StoredCargaBT as car inner join dbo.StoredTrafoMTMTMTBT as tr on tr.CodTrafo = car.CodTrafo " +
+                            _par._schema + "StoredCargaBT as car inner join " + _par._schema + "StoredTrafoMTMTMTBT as tr on tr.CodTrafo = car.CodTrafo " +
                             "where car.CodBase=@codbase and tr.CodBase=@codbase and car.CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _alim);
@@ -77,9 +77,8 @@ namespace ExportadorGeoPerdasDSS
 
                         while (rs.Read())
                         {
-                            string fases = AuxFunc.GetFasesDSS(rs["CodFas"].ToString());
+                            string fases = AuxFunc.GetFasesDSS(rs["CodFas"].ToString(), _par._modelo4condutores);
                             string numFases = AuxFunc.GetNumFases(rs["CodFas"].ToString());
-                            string prefixoBarraBT = GetPrefixoBarraBT(rs["CodConsBT"].ToString());
 
                             // obtem tensao base de acordo com tipo da carga (mono, bi ou tri) e o nivel de tensao do tipo do trafo
                             string Kv = GetTensaoBase(numFases, rs["TipTrafo"].ToString());
@@ -104,6 +103,12 @@ namespace ExportadorGeoPerdasDSS
                                 continue;
                             }
 
+                            /* //OBS: DEBUG exclui IP
+                            if (rs["TipCrvaCarga"].ToString().Equals("IP"))
+                            {
+                                continue;
+                            }*/
+
                             string demanda = AuxFunc.CalcDemanda(consumoMes, _iMes, _ano, rs["TipCrvaCarga"].ToString(), _numDiasFeriadoXMes, _somaCurvaCargaDiariaPU);
 
                             string linha = "";
@@ -114,8 +119,8 @@ namespace ExportadorGeoPerdasDSS
                                 case "ANEEL":
 
                                     // carga model=2
-                                    linha = "new load." + rs["CodConsBT"].ToString() + "M2"
-                                       + " bus1=" + prefixoBarraBT + rs["CodPonAcopl"] + fases //OBS1
+                                    linha = "new load.BT_" + rs["CodConsBT"].ToString() + "_M2"
+                                       + " bus1=" + rs["CodPonAcopl"] + fases //OBS1
                                        + ",Phases=" + numFases
                                        + ",kv=" + Kv
                                        + ",kW=" + demanda
@@ -125,8 +130,8 @@ namespace ExportadorGeoPerdasDSS
                                        + ",status=variable";
 
                                     // carga model=3
-                                    linha += "new load." + rs["CodConsBT"].ToString() + "M3"
-                                        + " bus1=" + prefixoBarraBT + rs["CodPonAcopl"] + fases //OBS1
+                                    linha += "new load.BT_" + rs["CodConsBT"].ToString() + "_M3"
+                                        + " bus1=" + rs["CodPonAcopl"] + fases //OBS1
                                         + ",Phases=" + numFases
                                         + ",kv=" + Kv
                                         + ",kW=" + demanda
@@ -139,17 +144,63 @@ namespace ExportadorGeoPerdasDSS
                                 // modelo P constante
                                 case "PCONST":
 
+                                    // multiplica pro 2 uma vez que a funcao AuxFunc.CalcDemanda divide por 2
                                     double demandaD = double.Parse(demanda) * 2;
 
-                                    linha = "new load." + rs["CodConsBT"].ToString() + "M1"
-                                       + " bus1=" + prefixoBarraBT + rs["CodPonAcopl"] + fases //OBS1
-                                       + ",Phases=" + numFases
-                                       + ",kv=" + Kv
-                                       + ",kW=" + demandaD.ToString()
-                                       + ",pf=0.92,Vminpu=0.92,Vmaxpu=1.5"
-                                       + ",model=1"
-                                       + ",daily=" + rs["TipCrvaCarga"].ToString()
-                                       + ",status=variable"; 
+                                    if (!_par._modelo4condutores)
+                                    {
+                                        linha = "new load.BT_" + rs["CodConsBT"].ToString() + "_M1"
+                                           + " bus1=" + rs["CodPonAcopl"] + fases
+                                           + ",Phases=" + numFases
+                                           + ",kv=" + Kv
+                                           + ",kW=" + demandaD.ToString()
+                                           + ",pf=0.92,Vminpu=0.92,Vmaxpu=1.5"
+                                           + ",model=1"
+                                           + ",daily=" + rs["TipCrvaCarga"].ToString()
+                                           + ",status=variable";
+                                    }
+                                    else
+                                    {
+                                        /* // OBS: DEBUG
+                                        // nao grava demanda abaixo de 0.001 KWh
+                                        if (demandaD < 0.001)
+                                        {
+                                            continue;
+                                        }
+                                        */
+
+                                        string tipLig = "wye";
+                                        if (numFases == "1")
+                                        {
+                                            tipLig = "wye";
+                                        }
+                                        /* //maneira como ANEEL simula
+                                        if (numFases == "2")
+                                        {
+                                            numFases = "1"; 
+                                            tipLig = "delta"; 
+                                        }*/
+                                        // maneira correta de se simular cargas BI
+                                        if (numFases == "2")
+                                        {
+                                            numFases = "2"; 
+                                            tipLig = "wye"; 
+                                        }
+                                        if (numFases == "3")
+                                        {
+                                            tipLig = "delta";
+                                        }
+
+                                        linha = "new load.BT_" + rs["CodConsBT"].ToString() + "_M1"
+                                           + " bus1=" + rs["CodPonAcopl"] + fases //" + prefixoBarraBT
+                                           + ",Phases=" + numFases + ",Conn=" + tipLig
+                                           + ",kv=" + Kv
+                                           + ",kW=" + demandaD.ToString()
+                                           + ",pf=0.92,Vminpu=0.92,Vmaxpu=1.5"
+                                           + ",model=1"
+                                           + ",daily=" + rs["TipCrvaCarga"].ToString()
+                                           + ",status=variable";
+                                    }
 
                                     break;
                             }
@@ -179,40 +230,30 @@ namespace ExportadorGeoPerdasDSS
         private string GetTensaoBase(string numFases, string tipoTrafo)
         {
             string retFases;
-            switch (numFases)
-            {
-                case "2":
-                    
-                    // se trafo monofasico com tap central
-                    if (tipoTrafo.Equals("1")) // bifasico do center tap
-                        retFases = "0.24";
-                    else
-                        retFases = "0.22";
-                    break;
 
-                case "1":
-
-                    // se trafo monofasico com tap central
-                    if (tipoTrafo.Equals("1")) // monofasico do center tap
-                        retFases = "0.12";
-                    else
-                        retFases = "0.127";
-                    break;
-
-                default: // se trifasico, tensao base BT sempre sera 0.22 
+            if (tipoTrafo.Equals("2")) // se trafo monofasico com tap central 
+            { 
+                if (numFases.Equals("1"))  // || numFases.Equals("2") ) 
+                {
+                    retFases = "0.12";
+                }
+                else
+                {
+                    retFases = "0.24";
+                }
+            }
+            else
+            { 
+                if (numFases.Equals("1")) //|| numFases.Equals("2") )
+                {
+                    retFases = "0.127";
+                }
+                else
+                {
                     retFases = "0.22";
-                    break;
+                }
             }
             return retFases;
-        }
-
-        // Distingue carga BT de IP e retorna o prefixo da Barra de BT correto. 
-        private string GetPrefixoBarraBT(string v)
-        {
-            if (v.Contains("IP"))
-                return "BBT";
-            else
-                return "RML";
         }
 
         public string GetNomeArq()
