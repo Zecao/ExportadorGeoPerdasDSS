@@ -1,7 +1,7 @@
 # ExportadorGeoPerdasDSS
 This is a C# project which connects in GeoPerdasANEEL database (MS SQL Server 2014) and batch generates the OpenDSS files (.dss) for the distribution feeders in the exact format to be executed by the project https://github.com/Zecao/ExecutorOpenDssBr.  
 
-The GeoPerdasANEEL is a database created from another database know as BDGD which Brazilian distribution utilities annualy inform all the mais assets to the Brazilian regulatory agency - ANEEL. So, the agency calculates the feeders energy losses on this database. The feeders .dss files - see FeederExample directory - are very similar to the ones created by the ANEEL software GeoPerdas.exe, but they are customized to be executed by the C# project cited above.
+The GeoPerdasANEEL is a database created from another database know as BDGD which the Brazilian distribution utilities annualy must inform all the main assets to the Brazilian regulatory agency, ANEEL. So, the agency calculates the feeders energy losses on this database. The feeders .dss files - see FeederExample directory - are very similar to the ones created by the ANEEL software GeoPerdas.exe, but they are customized to be executed by the C# project cited above.
 
 Advantages of using this project: 
 - faster .dss files creation, e.g. it takes 40 minutes to create 1700 feeders X 18 hours using a commercial ETL tool.
