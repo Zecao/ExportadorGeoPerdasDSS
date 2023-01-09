@@ -116,11 +116,11 @@ namespace ExportadorArqDSS
             // se modo reconfiguracao
             if (_genAllSubstation)
             {
-                GenSubstationDSSFiles();
+                CreateSubstationDSSFiles();
             }
             else
             {
-                GeneratesFeedersDSSFiles();
+                CreateFeederDSSFiles();
             }
 
             Console.Write("Fim!");
@@ -128,7 +128,7 @@ namespace ExportadorArqDSS
         }
 
         // Generates entire substation
-        private static void GenSubstationDSSFiles()
+        private static void CreateSubstationDSSFiles()
         {
             // populates lstAlim with all feeders from txt file "Alimentadores.m"
 
@@ -154,7 +154,7 @@ namespace ExportadorArqDSS
         }
 
         // Generates entire substation
-        private static void GeneratesFeedersDSSFiles()
+        private static void CreateFeederDSSFiles()
         {
             // lista de alimentadores
             List<string> lstAlim = CemigFeeders.GetAllFeedersFromTxtFile(GetNomeArqLstAlimentadores());
@@ -361,7 +361,7 @@ namespace ExportadorArqDSS
 
         private static void CriaTransformadorMTMTMTBTDSS()
         {
-            Trafo oTrafo = new Trafo(_alim, _connBuilder, _par, _SDEE );
+            Trafo oTrafo = new Trafo(_alim, _connBuilder, _par, _SDEE, _structElem);
 
             // realiza consulta StoredReguladorMT 
             _structElem._temTransformador = oTrafo.ConsultaBanco(_genAllSubstation);

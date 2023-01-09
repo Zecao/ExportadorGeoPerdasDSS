@@ -221,7 +221,6 @@ namespace ExportadorGeoPerdasDSS
             return demanda.ToString("0.#####");
         }
 
-
         //Pega os feriados do ano
         public static List<List<int>> Feriados(string arqFeriados)
         {
@@ -309,6 +308,7 @@ namespace ExportadorGeoPerdasDSS
             return tipoDia;
         }
 
+        //Returns month menmonic
         internal static string IntMes2strMes(int iMes)
         {
             string ret;
@@ -441,6 +441,7 @@ namespace ExportadorGeoPerdasDSS
             */
         }
 
+        // returns power by fase (divide by 3)
         internal static string GetPotPorFase(string p)
         {
             double potencia = Double.Parse(p);

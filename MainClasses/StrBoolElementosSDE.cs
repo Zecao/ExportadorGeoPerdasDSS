@@ -19,5 +19,6 @@ namespace ExportadorGeoPerdasDSS
         public bool _temGeradorMT;
         public bool _temGeradorBT; // TODO
         public bool _temCapacitorMT;
+        public bool _hasPT; // has PostoTransformador (MV MV transformer)
     }
 }

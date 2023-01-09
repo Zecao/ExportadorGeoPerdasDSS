@@ -136,16 +136,29 @@ namespace ExportadorGeoPerdasDSS
             {
                 // OBS: aloca medidor no terminal 2
                 linha = Environment.NewLine + "new energymeter.carga element=line." + _par._trEM
-                    + ",terminal=2" + Environment.NewLine; //OBS1
+                    + ",terminal=2" + Environment.NewLine; 
             }
             else
             {
                 linha = Environment.NewLine + "new energymeter.carga element=line." + "SMT_" + GetTrechoEnergyMeter(rs["CodPonAcopl"].ToString())
-                    + ",terminal=1" + Environment.NewLine; //OBS1
+                    + ",terminal=1" + Environment.NewLine;
+            }
+
+            // TODO. bolar maneira de tratar alim que comecam em 13.8 kV e passam p/ 34.5 (verificar tabela de trafos)
+            string voltageLevels;
+
+            // if feeder has 34.5/13.8 (or 13.8/34.5 kV) transformers 
+            if (_structElem._hasPT)
+            {
+                voltageLevels = "34.5,13.8";
+            }
+            else 
+            {
+                voltageLevels = rs["TenNom_kV"].ToString();
             }
 
             // voltage bases
-            linha += Environment.NewLine + "Set voltagebases=[" + rs["TenNom_kV"].ToString() + " 0.24 0.22]" + Environment.NewLine;
+            linha += Environment.NewLine + "Set voltagebases=[" + voltageLevels + ",0.24,0.22]" + Environment.NewLine;
 
             // CalcVoltageBases
             linha += "CalcVoltageBases" + Environment.NewLine;
