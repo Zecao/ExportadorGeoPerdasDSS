@@ -6,7 +6,6 @@ namespace ExportadorGeoPerdasDSS
 {
     class CapacitorMT
     {
-        // membros privador
         private static readonly string _capacitorMT = "CapacitorMT.dss";
         private StringBuilder _arqCapacitor;
         private readonly Param _par;

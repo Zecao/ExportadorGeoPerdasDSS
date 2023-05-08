@@ -7,7 +7,6 @@ namespace ExportadorGeoPerdasDSS
 {
     class CargaMT
     {
-        // membros privados
         private static readonly string _cargaMT = "CargaMT_";
         private static int _iMes;
         private static string _ano;

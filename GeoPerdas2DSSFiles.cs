@@ -361,7 +361,7 @@ namespace ExportadorArqDSS
 
         private static void CriaTransformadorMTMTMTBTDSS()
         {
-            Trafo oTrafo = new Trafo(_alim, _connBuilder, _par, _SDEE, _structElem);
+            Trafo oTrafo = new Trafo(_alim, _connBuilder, _par, _SDEE);
 
             // realiza consulta StoredReguladorMT 
             _structElem._temTransformador = oTrafo.ConsultaBanco(_genAllSubstation);
