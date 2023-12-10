@@ -8,15 +8,15 @@ namespace ExportadorGeoPerdasDSS
     {
         // membros privados
         private static readonly string _segmentosBT = "SegmentosBT.dss";
-        private readonly Param _par;
+        private Param _par;
         private readonly string _alim;
         private static SqlConnectionStringBuilder _connBuilder;
         private StringBuilder _arqSegmentoBT;
 
-        public SegmentoBT(string alim, SqlConnectionStringBuilder connBuilder, Param par)
+        public SegmentoBT(SqlConnectionStringBuilder connBuilder, Param par)
         {
             _par = par;
-            _alim = alim;
+            _alim = par._alim;
             _connBuilder = connBuilder;
         }
 
@@ -38,14 +38,14 @@ namespace ExportadorGeoPerdasDSS
                     if (_modoReconf)
                     {
                         command.CommandText = "select CodSegmBT,CodPonAcopl1,CodPonAcopl2,CodFas,CodCond,Comp_km" //,CoordPAC1_x,CoordPAC1_y,CoordPAC2_x,CoordPAC2_y
-                            + " from " + _par._schema + "StoredSegmentoBT "
+                            + " from " + _par._DBschema + "StoredSegmentoBT "
                             + "where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
                         command.CommandText = "select CodSegmBT,CodPonAcopl1,CodPonAcopl2,CodFas,CodCond,Comp_km" //,CoordPAC1_x,CoordPAC1_y,CoordPAC2_x,CoordPAC2_y
-                            + " from " + _par._schema + "StoredSegmentoBT "
+                            + " from " + _par._DBschema + "StoredSegmentoBT "
                             + "where CodBase=@codbase and CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _alim);
@@ -86,7 +86,7 @@ namespace ExportadorGeoPerdasDSS
                                 numFases = numFasesD.ToString();
 
                                 double comp_kmD = double.Parse(comp_km);
-                                
+
                                 // se comp < 1metro
                                 if (comp_kmD < 0.00049)
                                 {

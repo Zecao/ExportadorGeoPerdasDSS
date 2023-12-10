@@ -9,15 +9,20 @@ namespace ExportadorGeoPerdasDSS
         // membros privados
         private static readonly string _reguladores = "Reguladores.dss";
         private StringBuilder _arqReguladorMT;
-        private readonly Param _par;
+        private Param _par;
         private readonly string _alim;
         private static SqlConnectionStringBuilder _connBuilder;
 
-        public Regulador(string alim, SqlConnectionStringBuilder connBuilder, Param par)
+        public Regulador(SqlConnectionStringBuilder connBuilder, Param par)
         {
             _par = par;
-            _alim = alim;
+            _alim = par._alim;
             _connBuilder = connBuilder;
+        }
+
+        private string GetNomeArqReguladorMT(string alim)
+        {
+            return _par._pathAlim + alim + _reguladores;
         }
 
         // new transformer.TRTR2332AN Phases = 1, windings = 2, buses = (BMT98402313.1.0, BMT165130397.1.0), conns = (LN, LN), kvs = (7.97 7.97), kvas = (1992, 1992), xhl = 0.75,%loadloss=0.125251004016064,%noloadloss=0.0268072289156626
@@ -37,14 +42,14 @@ namespace ExportadorGeoPerdasDSS
                     if (_modoReconf)
                     {
                         command.CommandText = "select CodRegulMT,TnsLnh1_kV,CodFasPrim,CodPonAcopl1,CodPonAcopl2,PotNom_kVA,[ReatHL_%],"
-                            + "[Resis_%],PerdVz_W,TenRgl_pu,CodBnc,TipRegul,Descr from " + _par._schema + "StoredReguladorMT "
+                            + "[Resis_%],PerdVz_W,TenRgl_pu,CodBnc,TipRegul,Descr from " + _par._DBschema + "StoredReguladorMT "
                             + "where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
                         command.CommandText = "select CodRegulMT,TnsLnh1_kV,CodFasPrim,CodPonAcopl1,CodPonAcopl2,PotNom_kVA,[ReatHL_%],[Resis_%],PerdVz_W,TenRgl_pu,CodBnc,TipRegul,Descr from " +
-                            _par._schema + "StoredReguladorMT where CodBase=@codbase and CodAlim=@CodAlim";
+                            _par._DBschema + "StoredReguladorMT where CodBase=@codbase and CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _alim);
                     }
@@ -64,7 +69,7 @@ namespace ExportadorGeoPerdasDSS
                             string ptratio = GetPTRatio(tensaoFN);
                             string tipoRegul = rs["TipRegul"].ToString();
                             string perVazioPer = CalcPerdVazio(rs);
-                            string vRegVolts = CalcVReg(rs["TenRgl_pu"].ToString()); 
+                            string vRegVolts = CalcVReg(rs["TenRgl_pu"].ToString());
                             string numEq = " ! " + rs["Descr"].ToString();
 
                             // banco de regulador
@@ -88,10 +93,12 @@ namespace ExportadorGeoPerdasDSS
                                     + ",ptratio=" + ptratio
                                     + ",band=3"
                                     + ",vreg=" + vRegVolts
-                                    + ",reversible=Yes,revband=3"
-                                    + ",revvreg=" + vRegVolts
-                                    //+ ",revThreshold=10" 
+                                    + ",revNeutral=Yes " // Does not regulate in reverse direction
                                     + numEq + Environment.NewLine;
+                                /*
+                                + ",reversible=Yes,revband=3"
+                                + ",revvreg=" + "120"//vRegVolts //TODO
+                                //+ ",revThreshold=10"*/
 
                                 _arqReguladorMT.Append(linha1);
                                 _arqReguladorMT.Append(linha2);
@@ -118,7 +125,7 @@ namespace ExportadorGeoPerdasDSS
                                     + ",PTphase=1"
                                     + ",ptratio=" + ptratio
                                     + ",band=3"
-                                    + ",vreg=" + vRegVolts 
+                                    + ",vreg=" + vRegVolts
                                     + ",reversible=Yes,revband=3"
                                     + ",revvreg=" + vRegVolts
                                     //+ ",revThreshold=10" 

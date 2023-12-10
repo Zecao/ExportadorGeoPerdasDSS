@@ -15,21 +15,19 @@ namespace ExportadorGeoPerdasDSS
         private static readonly string _coordMT = "CoordMT.csv";
 
         private readonly bool _criaDispProtecao;
-        private readonly string _alim;
         private static SqlConnectionStringBuilder _connBuilder;
         private StringBuilder _arqSegmentoMT;
         private StringBuilder _arqCoord;
+        private readonly ModeloSDEE _SDEE;
         private readonly Dictionary<string, double> _dicLineCodeFaultRate;
 
         public static Param _par;
 
-        //public Param Param { get; }
-
-        public SegmentoMT(string alim, SqlConnectionStringBuilder connBuilder, Param par, bool criaDispProtecao)
+        public SegmentoMT(SqlConnectionStringBuilder connBuilder, ModeloSDEE sdee, Param par, bool criaDispProtecao)
         {
             _par = par;
-            _alim = alim;
             _connBuilder = connBuilder;
+            _SDEE = sdee;
             _criaDispProtecao = criaDispProtecao;
 
             // preenche dictionary lineCode X FaultRate
@@ -60,20 +58,20 @@ namespace ExportadorGeoPerdasDSS
                 using (SqlCommand command = conn.CreateCommand())
                 {
                     command.CommandText = "select CodSegmMT,CodPonAcopl1,CodPonAcopl2,CodFas,CodCond,Comp_km,"
-                    + "CoordPAC1_x,CoordPAC1_y,CoordPAC2_x,CoordPAC2_y from " + _par._schema + "StoredSegmentoMT";
+                    + "CoordPAC1_x,CoordPAC1_y,CoordPAC2_x,CoordPAC2_y from " + _par._DBschema + "StoredSegmentoMT";
 
                     if (_modoReconf)
                     {
-                        command.CommandText  += " where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
-                        command.Parameters.AddWithValue("@codbase", _par._codBase);                        
+                        command.CommandText += " where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                        command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
-                        command.CommandText  +=  " where CodBase=@codbase and CodAlim=@CodAlim";
+                        command.CommandText += " where CodBase=@codbase and CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
-                        command.Parameters.AddWithValue("@CodAlim", _alim);                    
+                        command.Parameters.AddWithValue("@CodAlim", _par._alim);
                     }
-                    using ( var rs = command.ExecuteReader() )
+                    using (var rs = command.ExecuteReader())
                     {
                         // verifica ocorrencia de elemento no banco
                         if (!rs.HasRows)
@@ -92,7 +90,7 @@ namespace ExportadorGeoPerdasDSS
                                 + ",bus2=" + "BMT" + rs["CodPonAcopl2"] + fases //OBS1:
                                 + ",Phases=" + numFases
                                 + ",Linecode=" + lineCode + "_" + numFases
-                                + ",Length=" + rs["Comp_km"] 
+                                + ",Length=" + rs["Comp_km"]
                                 + ",Units=km";
 
                             if (_criaDispProtecao)
@@ -105,7 +103,7 @@ namespace ExportadorGeoPerdasDSS
                             else
                             {
                                 linha += Environment.NewLine;
-                            }                            
+                            }
 
                             _arqSegmentoMT.Append(linha);
 
@@ -149,23 +147,23 @@ namespace ExportadorGeoPerdasDSS
 
                     if (_modoReconf)
                     {
-                        command.CommandText += "select CodPonAcopl1 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._schema 
+                        command.CommandText += "select CodPonAcopl1 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._DBschema
                             + "StoredSegmentoMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")" +
                         " union " +
-                        "select CodPonAcopl2 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._schema + "StoredSegmentoMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                        "select CodPonAcopl2 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._DBschema + "StoredSegmentoMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
 
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
-                        command.CommandText += "select CodPonAcopl1 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._schema
+                        command.CommandText += "select CodPonAcopl1 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._DBschema
                             + "StoredSegmentoMT where CodBase=@codbase and CodAlim=@CodAlim"
                             + " union "
-                            + "select CodPonAcopl2 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._schema
+                            + "select CodPonAcopl2 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._DBschema
                             + "StoredSegmentoMT where CodBase=@codbase and CodAlim=@CodAlim";
 
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
-                        command.Parameters.AddWithValue("@CodAlim", _alim);
+                        command.Parameters.AddWithValue("@CodAlim", _par._alim);
                     }
                     using (var rs = command.ExecuteReader())
                     {
@@ -191,23 +189,23 @@ namespace ExportadorGeoPerdasDSS
 
                     if (_modoReconf)
                     {
-                        command.CommandText += "select CodPonAcopl1 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._schema
+                        command.CommandText += "select CodPonAcopl1 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._DBschema
                             + "StoredSegmentoMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")" +
                         " union " +
-                        "select CodPonAcopl2 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._schema + "StoredSegmentoMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                        "select CodPonAcopl2 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._DBschema + "StoredSegmentoMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
 
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
-                        command.CommandText += "select CodPonAcopl1 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._schema
+                        command.CommandText += "select CodPonAcopl1 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._DBschema
                             + "StoredSegmentoBT where CodBase=@codbase and CodAlim=@CodAlim"
                             + " union "
-                            + "select CodPonAcopl2 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._schema
+                            + "select CodPonAcopl2 as 'PAC', CoordPAC1_x,CoordPAC1_y from " + _par._DBschema
                             + "StoredSegmentoBT where CodBase=@codbase and CodAlim=@CodAlim";
 
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
-                        command.Parameters.AddWithValue("@CodAlim", _alim);
+                        command.Parameters.AddWithValue("@CodAlim", _par._alim);
                     }
                     using (var rs = command.ExecuteReader())
                     {
@@ -235,14 +233,14 @@ namespace ExportadorGeoPerdasDSS
 
         public string GetNomeArq()
         {
-            return _par._pathAlim + _alim + _segmentosMT;
+            return _par._pathAlim + _par._alim + _segmentosMT;
         }
 
         internal void GravaEmArquivo()
         {
             ArqManip.SafeDelete(GetNomeArq());
 
-            ArqManip.GravaEmArquivo( _arqSegmentoMT.ToString(), GetNomeArq());
+            ArqManip.GravaEmArquivo(_arqSegmentoMT.ToString(), GetNomeArq());
         }
 
         internal void GravaArqCoord()
@@ -254,7 +252,7 @@ namespace ExportadorGeoPerdasDSS
 
         private string GetNomeArqCoord()
         {
-            return _par._pathAlim + _alim + _coordMT;
+            return _par._pathAlim + _par._alim + _coordMT;
         }
 
         // Une 
@@ -273,11 +271,11 @@ namespace ExportadorGeoPerdasDSS
 
                 using (SqlCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = "select CodAlim,CodPonAcopl from " + _par._schema + "Storedcircmt where codbase = @codbase "
-                                        + "and codalim in ("+ _par._conjAlim  + ")";
+                    command.CommandText = "select CodAlim,CodPonAcopl from " + _par._DBschema + "Storedcircmt where codbase = @codbase "
+                                        + "and codalim in (" + _par._conjAlim + ")";
                     command.Parameters.AddWithValue("@codbase", _par._codBase);
 
-                    using ( var rs = command.ExecuteReader() )
+                    using (var rs = command.ExecuteReader())
                     {
                         // verifica ocorrencia de elemento no banco
                         if (!rs.HasRows)
@@ -288,7 +286,7 @@ namespace ExportadorGeoPerdasDSS
                         // Preenche lista com os 2 cod acoplamento
                         while (rs.Read())
                         {
-                            dicCodPonAcopl.Add( rs["CodPonAcopl"].ToString() );
+                            dicCodPonAcopl.Add(rs["CodPonAcopl"].ToString());
                         }
                     }
                 }
@@ -297,10 +295,10 @@ namespace ExportadorGeoPerdasDSS
                 conn.Close();
             }
 
-            string linha="";
-                        
+            string linha = "";
+
             // pega os pels 
-            for (int i = 0; i < dicCodPonAcopl.Count;i++ )
+            for (int i = 0; i < dicCodPonAcopl.Count; i++)
             {
                 // tratamento do ultimo elemento
                 if (i == dicCodPonAcopl.Count - 1)
@@ -315,11 +313,11 @@ namespace ExportadorGeoPerdasDSS
 
                     _par._trEM = "TR" + "fic" + i.ToString();
                 }
-                else 
+                else
                 {
                     linha += "new line." + "TR" + "fic" + i.ToString()
                        + " bus1=" + "BMT" + dicCodPonAcopl[i] + ".1.2.3"
-                       + ",bus2=" + "BMT" + dicCodPonAcopl[i+1] + ".1.2.3"
+                       + ",bus2=" + "BMT" + dicCodPonAcopl[i + 1] + ".1.2.3"
                        + ",Phases=" + "3"
                        + ",Linecode=" + "CAB"
                        + ",Length=" + "0.001"

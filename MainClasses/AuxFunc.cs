@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.IO;
+using System.Linq;
 
 namespace ExportadorGeoPerdasDSS
 {
@@ -62,11 +63,36 @@ namespace ExportadorGeoPerdasDSS
             return ret;
         }
 
+        public static string CreateDERList_PVSystem(List<string> lst)
+        {
+            string ret;
+
+            // inicializacao 
+            ret = "PVSystem.";
+
+            // para cada alimentador da lista
+            foreach (string elem in lst)
+            {
+                ret += elem;
+
+                if (string.Equals(elem, lst.Last()))
+                {
+                    continue;
+                    //ret += "";
+                }
+                else
+                {
+                    ret += ",PVSystem.";
+                }
+            }
+            return ret;
+        }
+
         // retorna string de fases padrao OpenDSS de acordo com a fase 
         public static string GetFasesDSS(string codFase, bool _modelo4condutores = false)
         {
             string ret;
-                       
+
             switch (codFase)
             {
                 case "ABC":
@@ -121,7 +147,7 @@ namespace ExportadorGeoPerdasDSS
 
             if (_modelo4condutores)
             {
-                ret = ret.Replace("0","4");
+                ret = ret.Replace("0", "4");
             }
 
             return ret;
@@ -143,18 +169,44 @@ namespace ExportadorGeoPerdasDSS
             //verifica se tensao eh igual a 34.5 ou 22.0kV
             if (tensaoFN.Equals(34.5))
             {
-                ret = "19.92";  
-            } 
+                ret = "19.92";
+            }
             else if (tensaoFN.Equals(22.0))
             {
-                ret = "12.70";   
+                ret = "12.70";
             }
             return ret;
         }
 
-        // transforma consumo em demanda de acordo com o mes e curva de carga
-        public static string CalcDemanda(string consumoMes, int iMes, string ano, string curva, List<List<int>> numDiasFeriadoXMes, Dictionary<string,double> somaCurvaCargaDiariaPU)
+        // Returns k factor (transforms Energy into a power or demand value) 
+        internal static string GetFatorK(string tipGer)
         {
+            if (tipGer.Equals("UFV"))
+                return "7.16";
+            else return "24"; // hydraulic or powerplants 
+        }
+
+        internal static string GetLoadShape(string tipGer, string CodGeraMT)
+        {
+            string cab = "new loadshape.c" + CodGeraMT + " npts=24,interval=1.0,mult=";
+
+            if (tipGer.Equals("UFV"))
+            {
+                return cab + "[0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.17,0.47,0.7,0.9,1,1,0.93,0.8,0.53,0.33,0.2,0.13,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001]" + Environment.NewLine;
+            }
+            return cab + "[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]" + Environment.NewLine;
+        }
+
+        // transforma consumo em demanda de acordo com o mes e curva de carga
+        public static string CalcDemanda(string consumoMes, int iMes, string ano, string curva, List<List<int>> numDiasFeriadoXMes, Dictionary<string, double> somaCurvaCargaDiariaPU)
+        {
+            //debug
+            /*
+            if (curva.Equals("comUGBT"))
+            {
+                int d = 0;
+            }*/
+
             //TODO valores default
             double somaConsumoMensalPU_DU = 22;
             double somaConsumoMensalPU_SA = 4;
@@ -189,8 +241,9 @@ namespace ExportadorGeoPerdasDSS
             //Pega a potência ativa
             double demanda = dConsMes / somaConsumoMensalPU;
 
+            // OLD CODE
             // OBS: divide demanda por 2, uma vez que o modelo atual aloca 2 cargas para cada consumidor
-            demanda /= 2;
+            //demanda /= 2;
 
             // retorna demanda
             return demanda.ToString("0.#####");
@@ -214,12 +267,10 @@ namespace ExportadorGeoPerdasDSS
             //Pega a potência ativa
             double demanda = dConsMes / somaConsumoMensalPU;
 
-            // OBS: divide demanda por 2, uma vez que o modelo atual aloca 2 cargas para cada consumidor
-            // demanda = demanda / 2;
-
             // retorna demanda
             return demanda.ToString("0.#####");
         }
+
 
         //Pega os feriados do ano
         public static List<List<int>> Feriados(string arqFeriados)
@@ -262,7 +313,7 @@ namespace ExportadorGeoPerdasDSS
         }
 
         //Pega o número de dias do mês, separado por tipo de dia (Dia útil, sábado e domingo e feriado)
-        public static Dictionary<string, int> GetNumTipoDiasMes(int mes, int ano,  List<List<int>> numDiasFeriadoXMes)
+        public static Dictionary<string, int> GetNumTipoDiasMes(int mes, int ano, List<List<int>> numDiasFeriadoXMes)
         {
             //Pega o número de dias do mês
             int numDiasMes = DateTime.DaysInMonth(ano, mes);
@@ -410,35 +461,33 @@ namespace ExportadorGeoPerdasDSS
         // converte tensao fase-fase
         // OBS: objetivo desta funcao eh preencher o valor default 13.8 caso o parametro nao seja preenchido 
         // que ocorre com a execucao da SP Principal no GeoPerdas 
-        internal static string GetTensaoFF(string tensaoFF)
+        internal static string Check_TensaoLinhaPreenchida(string tensaoFF)
         {
-            // FIX ME
             // tensao FF vazia (ex. trafo nao visitado)
             if (tensaoFF.Equals(""))
             {
                 return "13.8";
             }
             return tensaoFF;
+        }
 
-            /* OLD CODE
-            // nivel de tensao default
-            string ret = "13.8";
-
-            // tensao FF vazia (ex. trafo nao visitado)
-            if (tensaoFF.Equals(""))
+        // TODO verificar se a rede do trafo eh com tap central
+        internal static string Get_kVbase_BT(string numFases)
+        {
+            if (numFases.Equals("1"))
             {
-                return ret;    
+                return "0.127";
             }
-
-            //necessario transformar para double
-            double tensaoFFd = double.Parse(tensaoFF); 
-            
-            if (tensaoFFd.Equals(34.5))
-                ret = "34.5";
-            else if (tensaoFFd.Equals(22.0))
-                ret = "22.0";
-             *             
-            */
+            return "0.22";
+            /*
+            if (numFases.Equals("1"))
+            {
+                return "0.12";
+            }
+            else
+            {
+                return "0.24";
+            }*/
         }
 
         // returns power by fase (divide by 3)

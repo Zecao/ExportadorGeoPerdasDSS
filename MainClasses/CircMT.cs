@@ -7,7 +7,6 @@ namespace ExportadorGeoPerdasDSS
     class CircMT
     {
         private static Param _par;
-        private static string _alim;
         private static SqlConnectionStringBuilder _connBuilder;
         private static bool _modoReconf;
         private static bool _criaArqCoordenadas;
@@ -15,11 +14,10 @@ namespace ExportadorGeoPerdasDSS
         private static int _iMes;
         private static string _coordMT;
 
-        public CircMT(string alim, SqlConnectionStringBuilder connBuilder, Param par, bool modoReconfiguracao, 
+        public CircMT(SqlConnectionStringBuilder connBuilder, Param par, bool modoReconfiguracao,
             bool criaArqCoordenadas, StrBoolElementosSDE structElem, int iMes, string coordMT)
-        {            
+        {
             _par = par;
-            _alim = alim;
             _connBuilder = connBuilder;
             _modoReconf = modoReconfiguracao;
             _criaArqCoordenadas = criaArqCoordenadas;
@@ -30,7 +28,7 @@ namespace ExportadorGeoPerdasDSS
 
         private static string GetNomeArqCoord()
         {
-            return _alim + _coordMT;
+            return _par._alim + _coordMT;
         }
 
         /* // estrutura tipica do arquivo masterDSS criado
@@ -78,7 +76,7 @@ namespace ExportadorGeoPerdasDSS
                 using (SqlCommand command = conn.CreateCommand())
                 {
                     // consulta
-                    command.CommandText = "select TenNom_kV,TenOpe_pu,CodPonAcopl from " + _par._schema + "storedcircmt ";             
+                    command.CommandText = "select TenNom_kV,TenOpe_pu,CodPonAcopl from " + _par._DBschema + "storedcircmt ";
 
                     // se modo reconfiguracao 
                     if (_modoReconf)
@@ -90,7 +88,7 @@ namespace ExportadorGeoPerdasDSS
                     {
                         command.CommandText += "where CodBase=@codbase and CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
-                        command.Parameters.AddWithValue("@CodAlim", _alim);
+                        command.Parameters.AddWithValue("@CodAlim", _par._alim);
                     }
 
                     using (var rs = command.ExecuteReader())
@@ -100,7 +98,7 @@ namespace ExportadorGeoPerdasDSS
                         // verifica se NAO tem linhas
                         if (!rs.HasRows)
                         {
-                            Console.Write(_alim + ": não localizado na StoredCircMT");
+                            Console.Write(_par._alim + ": não localizado na StoredCircMT");
                             return null;
                         }
                         else
@@ -130,47 +128,34 @@ namespace ExportadorGeoPerdasDSS
         // Cria Str Energymeter e comandos adicionais
         private static string CriaStringMasterDSS_ParteB(SqlDataReader rs)
         {
-            string linha;
+            string linha = "";
 
             if (_modoReconf)
             {
                 // OBS: aloca medidor no terminal 2
                 linha = Environment.NewLine + "new energymeter.carga element=line." + _par._trEM
-                    + ",terminal=2" + Environment.NewLine; 
+                    + ",terminal=2" + Environment.NewLine; //OBS1
             }
             else
             {
                 linha = Environment.NewLine + "new energymeter.carga element=line." + "SMT_" + GetTrechoEnergyMeter(rs["CodPonAcopl"].ToString())
-                    + ",terminal=1" + Environment.NewLine;
-            }
-
-            // TODO. bolar maneira de tratar alim que comecam em 13.8 kV e passam p/ 34.5 (verificar tabela de trafos)
-            string voltageLevels;
-
-            // if feeder has 34.5/13.8 (or 13.8/34.5 kV) transformers 
-            if (_structElem._hasPT)
-            {
-                voltageLevels = "34.5,13.8";
-            }
-            else 
-            {
-                voltageLevels = rs["TenNom_kV"].ToString();
+                    + ",terminal=1" + Environment.NewLine; //OBS1
             }
 
             // voltage bases
-            linha += Environment.NewLine + "Set voltagebases=[" + voltageLevels + ",0.24,0.22]" + Environment.NewLine;
+            linha += Environment.NewLine + "Set voltagebases=[" + rs["TenNom_kV"].ToString() + " 0.24 0.22]" + Environment.NewLine;
 
             // CalcVoltageBases
             linha += "CalcVoltageBases" + Environment.NewLine;
 
             // Aumento do numero de iteracoes OpenDSS
-            linha += "Set MaxIter = 150" + Environment.NewLine;
-            linha += "Set MaxControlIter = 40" + Environment.NewLine;
+            linha += "Set MaxIter = 400" + Environment.NewLine;
+            linha += "Set MaxControlIter = 400" + Environment.NewLine;
 
             // 
             linha += Environment.NewLine + "! Solve mode=daily,hour=0,number=24,stepsize=1h" + Environment.NewLine;
 
-            if (_criaArqCoordenadas) 
+            if (_criaArqCoordenadas)
             {
                 // Linhas de coordenadas
                 linha += Environment.NewLine + Environment.NewLine + "! BusCoords " + GetNomeArqCoord() + Environment.NewLine;
@@ -199,7 +184,7 @@ namespace ExportadorGeoPerdasDSS
             //New "Circuit.AXAU03" basekv=13.8 pu=1.04 bus1="179780895" r1=0 x1=0.0001
             if (_modoReconf)
             {
-                return "new circuit.alim" + _alim
+                return "new circuit.alim" + _par._alim
                 + " bus1=" + "BMT" + "FIC" // OBS: + ".1.2.3"
                 + ",basekv=" + rs["TenNom_kV"].ToString()
                 + ",pu=" + rs["TenOpe_pu"].ToString()
@@ -210,20 +195,25 @@ namespace ExportadorGeoPerdasDSS
             {
                 // modelo
                 // new circuit.alimAFNU16 bus1=BMT155673172,basekv=13.8,pu=
-                return "new circuit.alim" + _alim
+                return "new circuit.alim" + _par._alim
                 + " bus1=" + "BMT" + rs["CodPonAcopl"].ToString() // OBS: + ".1.2.3"
                 + ",basekv=" + rs["TenNom_kV"].ToString()
                 + ",pu=" + rs["TenOpe_pu"].ToString()
                 + ",r1=0,x1=0.0001"
-                + Environment.NewLine + Environment.NewLine; 
+                + Environment.NewLine + Environment.NewLine;
             }
         }
 
         // funcao que cria a string do arquivo masterDSS
         private static string CriaStringMasterDSS_ParteA(SqlDataReader rs)
         {
+            string linha = "";
+
+            // cabeca alim
+            string cabAlim = rs["CodPonAcopl"].ToString();
+
             // limpa
-            string linha = "clear" + Environment.NewLine;
+            linha = "clear" + Environment.NewLine;
 
             // new circuit
             linha += CriaStrCircuit(rs);
@@ -238,53 +228,53 @@ namespace ExportadorGeoPerdasDSS
 
             if (_structElem._temSegmentoMT)
             {
-                linha += "Redirect " + _alim + "SegmentosMT.dss" + Environment.NewLine;
+                linha += "Redirect " + _par._alim + "SegmentosMT.dss" + Environment.NewLine;
             }
             if (_structElem._temChaveMT)
             {
-                linha += "Redirect " + _alim + "ChavesMT.dss" + Environment.NewLine;
+                linha += "Redirect " + _par._alim + "ChavesMT.dss" + Environment.NewLine;
             }
             if (_structElem._temRegulador)
             {
-                linha += "Redirect " + _alim + "Reguladores.dss" + Environment.NewLine;
+                linha += "Redirect " + _par._alim + "Reguladores.dss" + Environment.NewLine;
             }
             if (_structElem._temTransformador)
             {
-                linha += "Redirect " + _alim + "Transformadores.dss" + Environment.NewLine;
+                linha += "Redirect " + _par._alim + "Transformadores.dss" + Environment.NewLine;
             }
             if (_structElem._temSegmentoBT)
             {
-                linha += "Redirect " + _alim + "SegmentosBT.dss" + Environment.NewLine;
+                linha += "Redirect " + _par._alim + "SegmentosBT.dss" + Environment.NewLine;
             }
             if (_structElem._temRamal)
             {
-                linha += "Redirect " + _alim + "Ramais.dss" + Environment.NewLine;
+                linha += "Redirect " + _par._alim + "Ramais.dss" + Environment.NewLine;
             }
 
             if (_structElem._temCargaMT)
             {
-                linha += "Redirect " + _alim + "CargaMT_" + AuxFunc.IntMes2strMes(_iMes) + ".dss" + Environment.NewLine;
+                linha += "Redirect " + _par._alim + "CargaMT_" + AuxFunc.IntMes2strMes(_iMes) + ".dss" + Environment.NewLine;
             }
 
             if (_structElem._temCargaBT)
             {
-                linha += "Redirect " + _alim + "CargaBT_" + AuxFunc.IntMes2strMes(_iMes) + ".dss" + Environment.NewLine;
+                linha += "Redirect " + _par._alim + "CargaBT_" + AuxFunc.IntMes2strMes(_iMes) + ".dss" + Environment.NewLine;
             }
 
             if (_structElem._temCapacitorMT)
             {
-                linha += "Redirect " + _alim + "CapacitorMT.dss" + Environment.NewLine;
+                linha += "Redirect " + _par._alim + "CapacitorMT.dss" + Environment.NewLine;
             }
 
             if (_structElem._temGeradorMT)
             {
-                linha += "Redirect " + _alim + "GeradorMT_" + AuxFunc.IntMes2strMes(_iMes) + ".dss" + Environment.NewLine;
+                linha += "Redirect " + _par._alim + "GeradorMT_" + AuxFunc.IntMes2strMes(_iMes) + ".dss" + Environment.NewLine;
             }
 
             // TODO implementar
             if (_structElem._temGeradorBT)
             {
-                linha += "Redirect " + _alim + "GeradorBT" + AuxFunc.IntMes2strMes(_iMes) + ".dss" + Environment.NewLine;
+                linha += "Redirect " + _par._alim + "GeradorBT_" + AuxFunc.IntMes2strMes(_iMes) + ".dss" + Environment.NewLine;
             }
             return linha;
         }
@@ -298,9 +288,9 @@ namespace ExportadorGeoPerdasDSS
                 conn.Open();
                 using (SqlCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = "select CodSegmMT from " + _par._schema + "StoredSegmentoMT where CodBase=@codbase and CodAlim=@CodAlim and CodPonAcopl1=@CodPonAcopl1";
+                    command.CommandText = "select CodSegmMT from " + _par._DBschema + "StoredSegmentoMT where CodBase=@codbase and CodAlim=@CodAlim and CodPonAcopl1=@CodPonAcopl1";
                     command.Parameters.AddWithValue("@codbase", _par._codBase);
-                    command.Parameters.AddWithValue("@CodAlim", _alim);
+                    command.Parameters.AddWithValue("@CodAlim", _par._alim);
                     command.Parameters.AddWithValue("@CodPonAcopl1", pel);
 
                     using (var rs = command.ExecuteReader())

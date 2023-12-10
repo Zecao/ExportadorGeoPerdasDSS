@@ -7,11 +7,11 @@ namespace ExportadorGeoPerdasDSS
 {
     class CargaMT
     {
+        // membros privados
         private static readonly string _cargaMT = "CargaMT_";
         private static int _iMes;
         private static string _ano;
         private readonly Param _par;
-        private readonly string _alim;
         private static SqlConnectionStringBuilder _connBuilder;
         private StringBuilder _arqSegmentoBT;
         private readonly List<List<int>> _numDiasFeriadoXMes;
@@ -19,12 +19,11 @@ namespace ExportadorGeoPerdasDSS
         private readonly Dictionary<string, List<string>> _curvasTipicasClientesMT;
         private readonly ModeloSDEE _SDEE;
 
-        public CargaMT(string alim, SqlConnectionStringBuilder connBuilder, int iMes,
-            string ano, List<List<int>> numDiasFeriadoXMes, Dictionary<string,double> somaCurvaCargaDiariaPU,
+        public CargaMT(SqlConnectionStringBuilder connBuilder, int iMes,
+            string ano, List<List<int>> numDiasFeriadoXMes, Dictionary<string, double> somaCurvaCargaDiariaPU,
             ModeloSDEE sdee, Param par, Dictionary<string, List<string>> curvasCliMT = null)
         {
             _par = par;
-            _alim = alim;
             _connBuilder = connBuilder;
             _iMes = iMes;
             _ano = ano;
@@ -32,7 +31,7 @@ namespace ExportadorGeoPerdasDSS
             _somaCurvaCargaDiariaPU = somaCurvaCargaDiariaPU;
             _SDEE = sdee;
 
-            if (_SDEE._utilizarCurvaDeCargaClienteMTIndividual) 
+            if (_SDEE._utilizarCurvaDeCargaClienteMTIndividual)
             {
                 _curvasTipicasClientesMT = curvasCliMT;
             }
@@ -60,15 +59,15 @@ namespace ExportadorGeoPerdasDSS
                     // se modo reconfiguracao 
                     if (_modoReconf)
                     {
-                        command.CommandText += _par._schema + "StoredCargaMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                        command.CommandText += _par._DBschema + "StoredCargaMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
-                        command.CommandText += _par._schema + "StoredCargaMT where CodBase=@codbase and CodAlim=@CodAlim";
+                        command.CommandText += _par._DBschema + "StoredCargaMT where CodBase=@codbase and CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
-                        command.Parameters.AddWithValue("@CodAlim", _alim);
-                    }               
+                        command.Parameters.AddWithValue("@CodAlim", _par._alim);
+                    }
 
                     using (var rs = command.ExecuteReader())
                     {
@@ -81,7 +80,7 @@ namespace ExportadorGeoPerdasDSS
                         while (rs.Read())
                         {
                             // Obtem o consumo de acordo com o mes
-                            string consumoMes = AuxFunc.GetConsumoMesCorrente(rs,_iMes);
+                            string consumoMes = AuxFunc.GetConsumoMesCorrente(rs, _iMes);
 
                             // se consumo nao eh vazio, transforma para double para verificar se zero
                             // OBS: optou-se por esta funcao visto que o banco pode retornar: "0","0.00000" e etc...
@@ -101,7 +100,7 @@ namespace ExportadorGeoPerdasDSS
                             }
 
                             //
-                            string linha = CriaStringCargaMT(rs, consumoMes);                             
+                            string linha = CriaStringCargaMT(rs, consumoMes);
 
                             _arqSegmentoBT.Append(linha);
                         }
@@ -119,12 +118,12 @@ namespace ExportadorGeoPerdasDSS
         {
             string fases = AuxFunc.GetFasesDSS(rs["CodFas"].ToString());
             string numFases = AuxFunc.GetNumFases(rs["CodFas"].ToString());
-            string tensaoFF = AuxFunc.GetTensaoFF(rs["TnsLnh_kV"].ToString());
+            string tensaoFF = AuxFunc.Check_TensaoLinhaPreenchida(rs["TnsLnh_kV"].ToString());
 
             //
             string demanda = AuxFunc.CalcDemanda(consumoMes, _iMes, _ano, rs["TipCrvaCarga"].ToString(), _numDiasFeriadoXMes, _somaCurvaCargaDiariaPU);
 
-            string linha="";
+            string linha = "";
             //
             if (_SDEE._utilizarCurvaDeCargaClienteMTIndividual)
             {
@@ -280,7 +279,7 @@ namespace ExportadorGeoPerdasDSS
                 + ",model=3"
                 + ",daily=" + rs["TipCrvaCarga"].ToString()
                 + ",status=variable" + Environment.NewLine;
-            
+
             return linha;
         }
 
@@ -288,7 +287,7 @@ namespace ExportadorGeoPerdasDSS
         private string CriaDSSCargaMTcomCurva(SqlDataReader rs, string demanda, string fases, string numFases, string tensaoFF)
         {
             string linha;
- 
+
             string codCliMT = rs["CodConsMT"].ToString();
 
             // se cliente MT esta no dicionario de curvas de carga
@@ -317,8 +316,8 @@ namespace ExportadorGeoPerdasDSS
             }
             else
             {
-                    linha = CriaDSSCargaPconst(rs, demanda, fases, numFases, tensaoFF);
-     
+                linha = CriaDSSCargaPconst(rs, demanda, fases, numFases, tensaoFF);
+
             }
 
             return linha;
@@ -328,7 +327,7 @@ namespace ExportadorGeoPerdasDSS
         {
             string strMes = AuxFunc.IntMes2strMes(_iMes);
 
-            return _par._pathAlim + _alim + _cargaMT + strMes + ".dss";
+            return _par._pathAlim + _par._alim + _cargaMT + strMes + ".dss";
         }
 
         internal void GravaEmArquivo()

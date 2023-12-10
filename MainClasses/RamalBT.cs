@@ -8,15 +8,15 @@ namespace ExportadorGeoPerdasDSS
     {
         // membros privados
         private static readonly string _ramais = "Ramais.dss";
-        private readonly Param _par;
+        private Param _par;
         private readonly string _alim;
         private static SqlConnectionStringBuilder _connBuilder;
         private StringBuilder _arqSegmentoBT;
 
-        public RamalBT(string alim, SqlConnectionStringBuilder connBuilder, Param par)
+        public RamalBT(SqlConnectionStringBuilder connBuilder, Param par)
         {
             _par = par;
-            _alim = alim;
+            _alim = par._alim;
             _connBuilder = connBuilder;
         }
 
@@ -37,14 +37,14 @@ namespace ExportadorGeoPerdasDSS
                     // se modo reconfiguracao 
                     if (_modoReconf)
                     {
-                        command.CommandText = "select CodRmlBT,CodPonAcopl1,CodPonAcopl2,CodFas,CodCond,Comp_km,Descr from " + _par._schema + "StoredRamalBT "
-                            +"where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                        command.CommandText = "select CodRmlBT,CodPonAcopl1,CodPonAcopl2,CodFas,CodCond,Comp_km,Descr from " + _par._DBschema + "StoredRamalBT "
+                            + "where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
-                        command.CommandText = "select CodRmlBT,CodPonAcopl1,CodPonAcopl2,CodFas,CodCond,Comp_km,Descr from " + _par._schema + "StoredRamalBT "
-                            +"where CodBase=@codbase and CodAlim=@CodAlim";
+                        command.CommandText = "select CodRmlBT,CodPonAcopl1,CodPonAcopl2,CodFas,CodCond,Comp_km,Descr from " + _par._DBschema + "StoredRamalBT "
+                            + "where CodBase=@codbase and CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _alim);
                     }
@@ -74,13 +74,13 @@ namespace ExportadorGeoPerdasDSS
                              }
                              */
 
-                            string compRml = rs["Comp_km"].ToString();                          
+                            string compRml = rs["Comp_km"].ToString();
                             string fases = AuxFunc.GetFasesDSS(rs["CodFas"].ToString(), _par._modelo4condutores);
                             string numFases = AuxFunc.GetNumFases(rs["CodFas"].ToString());
                             string linha;
 
                             //NEW CODE
-                            if ( ! _par._modelo4condutores )
+                            if (!_par._modelo4condutores)
                             {
                                 linha = "new line.RBT_" + rs["CodRmlBT"].ToString()
                                     + " bus1=" + rs["CodPonAcopl1"] + fases //+ "BBT" 
@@ -95,7 +95,7 @@ namespace ExportadorGeoPerdasDSS
                                 double numFasesD = double.Parse(numFases);
                                 numFasesD++;
                                 numFases = numFasesD.ToString();
-                                
+
                                 linha = "new line.RBT_" + rs["CodRmlBT"].ToString()
                                 + " bus1=" + rs["CodPonAcopl1"] + fases //+ "BBT"
                                 + ",bus2=" + rs["CodPonAcopl2"] + fases //+ "RML"

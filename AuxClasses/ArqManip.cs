@@ -11,10 +11,10 @@ namespace ExportadorGeoPerdasDSS
             {
                 File.Delete(arquivo);
             }
-        } 
+        }
 
         //Grava CONTEUDO em arquivo FID 
-        public static void GravaEmArquivo(string conteudo, string fid )
+        public static void GravaEmArquivo(string conteudo, string fid)
         {
             try
             {

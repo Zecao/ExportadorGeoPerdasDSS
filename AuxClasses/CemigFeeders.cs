@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ExportadorGeoPerdasDSS
 {
@@ -16,7 +14,7 @@ namespace ExportadorGeoPerdasDSS
         {
             //Variável que armazenará a lista com os alimentadores
             List<string> alimentadores = new List<string>();
-            
+
             //Bloco que trata o arquivo, abrindo e fechando-o
             if (File.Exists(arquivo))
             {
@@ -48,7 +46,7 @@ namespace ExportadorGeoPerdasDSS
             {
                 throw new FileNotFoundException("Arquivo " + arquivo + " não encontrado.");
             }
-            
+
         }
 
         //Transforms the feeder file string in a Substation list, removing the number after the name.
@@ -99,19 +97,23 @@ namespace ExportadorGeoPerdasDSS
         }
 
         //Get all feeders in a string separated by ',' from a substation name
-        public static string GetAllFeedersFromSubstationString(string sub, SqlConnectionStringBuilder con, Param par)
+        public static bool GetAllFeedersFromSubstationString(string sub, SqlConnectionStringBuilder con, Param par)
         {
             // OBS: a SE deve ter nome
             // obtem lstAlim da SE
             List<string> lstAlim = GetLstAlimSE(sub, con, par);
-           
+
             if (lstAlim.Count == 0)
             {
-                return null;
+                return false;
             }
             // cria string com a uniao dos alimentadores 
-            return UneStringAlim(lstAlim);          
+            string lstAlimSE = UneStringAlim(lstAlim);
 
+            // adds lst feeders in _par object
+            par._conjAlim = lstAlimSE;
+
+            return true;
         }
 
         private static string UneStringAlim(List<string> lstAlim)
@@ -138,11 +140,11 @@ namespace ExportadorGeoPerdasDSS
             return conjAlims;
         }
 
-        private static List<string> GetLstAlimSE(string codSE, SqlConnectionStringBuilder _connBuilder, Param par )
+        private static List<string> GetLstAlimSE(string codSE, SqlConnectionStringBuilder _connBuilder, Param par)
         {
             List<string> lstAlim = new List<string>();
 
-             using (SqlConnection conn = new SqlConnection(_connBuilder.ToString()))
+            using (SqlConnection conn = new SqlConnection(_connBuilder.ToString()))
             {
                 // abre conexao 
                 conn.Open();
@@ -150,7 +152,7 @@ namespace ExportadorGeoPerdasDSS
                 //consulta a banco 
                 using (SqlCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = "select CodAlim from " + par._schema + "StoredCircMT "
+                    command.CommandText = "select CodAlim from " + par._DBschema + "StoredCircMT "
                         + "where CodBase=@codbase and CodSub=@codSe";
                     command.Parameters.AddWithValue("@codbase", par._codBase);
                     command.Parameters.AddWithValue("@codSe", codSE);

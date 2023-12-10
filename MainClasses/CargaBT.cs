@@ -12,19 +12,17 @@ namespace ExportadorGeoPerdasDSS
         private static int _iMes;
         private static string _ano;
         private readonly Param _par;
-        private readonly string _alim;
         private static SqlConnectionStringBuilder _connBuilder;
         private StringBuilder _arqSegmentoBT;
         private readonly List<List<int>> _numDiasFeriadoXMes;
         private readonly Dictionary<string, double> _somaCurvaCargaDiariaPU;
         private readonly ModeloSDEE _SDEE;
 
-        public CargaBT(string alim, SqlConnectionStringBuilder connBuilder, int iMes, string ano,
+        public CargaBT(SqlConnectionStringBuilder connBuilder, int iMes, string ano,
             List<List<int>> numDiasFeriadoXMes, Dictionary<string, double> somaCurvaCargaDiariaPU, ModeloSDEE sdee,
             Param par)
         {
             _par = par;
-            _alim = alim;
             _connBuilder = connBuilder;
             _iMes = iMes;
             _ano = ano;
@@ -53,7 +51,7 @@ namespace ExportadorGeoPerdasDSS
                     {
                         command.CommandText = "select TipTrafo,TenSecu_kV,CodConsBT,CodFas,CodPonAcopl,TipCrvaCarga,EnerMedid01_MWh,EnerMedid02_MWh,EnerMedid03_MWh,EnerMedid04_MWh,EnerMedid05_MWh,EnerMedid06_MWh,EnerMedid07_MWh," +
                             "EnerMedid08_MWh,EnerMedid09_MWh,EnerMedid10_MWh,EnerMedid11_MWh,EnerMedid12_MWh from " +
-                            _par._schema + "StoredCargaBT as car inner join " + _par._schema + "StoredTrafoMTMTMTBT as tr on tr.CodTrafo = car.CodTrafo " +
+                            _par._DBschema + "StoredCargaBT as car inner join " + _par._DBschema + "StoredTrafoMTMTMTBT as tr on tr.CodTrafo = car.CodTrafo " +
                             "where car.CodBase=@codbase and tr.CodBase=@codbase and car.CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
@@ -61,10 +59,10 @@ namespace ExportadorGeoPerdasDSS
                     {
                         command.CommandText = "select TipTrafo,TenSecu_kV,CodConsBT,CodFas,CodPonAcopl,TipCrvaCarga,EnerMedid01_MWh,EnerMedid02_MWh,EnerMedid03_MWh,EnerMedid04_MWh,EnerMedid05_MWh,EnerMedid06_MWh,EnerMedid07_MWh," +
                             "EnerMedid08_MWh,EnerMedid09_MWh,EnerMedid10_MWh,EnerMedid11_MWh,EnerMedid12_MWh from " +
-                            _par._schema + "StoredCargaBT as car inner join " + _par._schema + "StoredTrafoMTMTMTBT as tr on tr.CodTrafo = car.CodTrafo " +
+                            _par._DBschema + "StoredCargaBT as car inner join " + _par._DBschema + "StoredTrafoMTMTMTBT as tr on tr.CodTrafo = car.CodTrafo " +
                             "where car.CodBase=@codbase and tr.CodBase=@codbase and car.CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
-                        command.Parameters.AddWithValue("@CodAlim", _alim);
+                        command.Parameters.AddWithValue("@CodAlim", _par._alim);
                     }
 
                     using (var rs = command.ExecuteReader())
@@ -84,21 +82,21 @@ namespace ExportadorGeoPerdasDSS
                             string Kv = GetTensaoBase(numFases, rs["TipTrafo"].ToString());
 
                             //obtem o consumo de acordo com o mes 
-                            string consumoMes = AuxFunc.GetConsumoMesCorrente(rs,_iMes);
+                            string consumoMes = AuxFunc.GetConsumoMesCorrente(rs, _iMes);
 
                             // se consumo nao eh vazio, transforma para double
                             // OBS: optou-se por esta funcao visto que o banco pode retornar: "0","0.00000" e etc...
-                            if ( !consumoMes.Equals("") )
+                            if (!consumoMes.Equals(""))
                             {
                                 double dConsumoMes = double.Parse(consumoMes);
 
                                 // skipa consumo = 0
-                                if ( dConsumoMes == 0 )
+                                if (dConsumoMes == 0)
                                 {
                                     continue;
                                 }
                             }
-                            else 
+                            else
                             {
                                 continue;
                             }
@@ -127,7 +125,7 @@ namespace ExportadorGeoPerdasDSS
                                        + ",pf=0.92,Vminpu=0.92,Vmaxpu=1.5"
                                        + ",model=2"
                                        + ",daily=" + rs["TipCrvaCarga"].ToString()
-                                       + ",status=variable";
+                                       + ",status=variable" + Environment.NewLine;
 
                                     // carga model=3
                                     linha += "new load.BT_" + rs["CodConsBT"].ToString() + "_M3"
@@ -183,8 +181,8 @@ namespace ExportadorGeoPerdasDSS
                                         // maneira correta de se simular cargas BI
                                         if (numFases == "2")
                                         {
-                                            numFases = "2"; 
-                                            tipLig = "wye"; 
+                                            numFases = "2";
+                                            tipLig = "wye";
                                         }
                                         if (numFases == "3")
                                         {
@@ -232,7 +230,7 @@ namespace ExportadorGeoPerdasDSS
             string retFases;
 
             if (tipoTrafo.Equals("2")) // se trafo monofasico com tap central 
-            { 
+            {
                 if (numFases.Equals("1"))  // || numFases.Equals("2") ) 
                 {
                     retFases = "0.12";
@@ -243,7 +241,7 @@ namespace ExportadorGeoPerdasDSS
                 }
             }
             else
-            { 
+            {
                 if (numFases.Equals("1")) //|| numFases.Equals("2") )
                 {
                     retFases = "0.127";
@@ -260,7 +258,7 @@ namespace ExportadorGeoPerdasDSS
         {
             string strMes = AuxFunc.IntMes2strMes(_iMes);
 
-            return _par._pathAlim + _alim + _cargaBT + strMes + ".dss";
+            return _par._pathAlim + _par._alim + _cargaBT + strMes + ".dss";
         }
 
         internal void GravaEmArquivo()

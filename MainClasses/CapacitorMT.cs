@@ -6,16 +6,15 @@ namespace ExportadorGeoPerdasDSS
 {
     class CapacitorMT
     {
+        // membros privador
         private static readonly string _capacitorMT = "CapacitorMT.dss";
         private StringBuilder _arqCapacitor;
         private readonly Param _par;
-        private readonly string _alim;
         private static SqlConnectionStringBuilder _connBuilder;
 
-        public CapacitorMT(string alim, SqlConnectionStringBuilder connBuilder, Param par)
+        public CapacitorMT(SqlConnectionStringBuilder connBuilder, Param par)
         {
             _par = par;
-            _alim = alim;
             _connBuilder = connBuilder;
         }
 
@@ -36,15 +35,15 @@ namespace ExportadorGeoPerdasDSS
                     if (_modoReconf)
                     {
                         command.CommandText = "select CodCapMT,CodPonAcopl,CodFas,PotNom_KVAr,kvnom " +
-                            "from " + _par._schema + "CemigCapacitorMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                            "from " + _par._DBschema + "CemigCapacitorMT where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
                         command.CommandText = "select CodCapMT,CodPonAcopl,CodFas,PotNom_KVAr,kvnom " +
-                            "from " + _par._schema + "CemigCapacitorMT where CodBase=@codbase and CodAlim=@CodAlim";
+                            "from " + _par._DBschema + "CemigCapacitorMT where CodBase=@codbase and CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
-                        command.Parameters.AddWithValue("@CodAlim", _alim);
+                        command.Parameters.AddWithValue("@CodAlim", _par._alim);
                     }
 
                     using (var rs = command.ExecuteReader())
@@ -61,7 +60,7 @@ namespace ExportadorGeoPerdasDSS
                             string numFases = AuxFunc.GetNumFases(rs["CodFas"].ToString());
                             string kvbase = rs["kvnom"].ToString();
 
-                            string linha="";
+                            string linha = "";
 
                             // se banco trifasico
                             if (numFases.Equals("3"))
@@ -69,9 +68,9 @@ namespace ExportadorGeoPerdasDSS
                                 // calcula potencia por fase
                                 string potFase = AuxFunc.GetPotPorFase(rs["PotNom_KVAr"].ToString());
 
-                                string[] fases={"1","2","3"};
+                                string[] fases = { "1", "2", "3" };
 
-                                foreach(string fase in fases)
+                                foreach (string fase in fases)
                                 {
                                     linha += "new capacitor." + "CAP" + rs["CodCapMT"].ToString() + "-" + fase
                                        + " bus1=" + "BMT" + rs["CodPonAcopl"].ToString()
@@ -83,16 +82,16 @@ namespace ExportadorGeoPerdasDSS
                                 }
                             }
                             // capacitor monofasico
-                            else 
+                            else
                             {
                                 linha = "new capacitor." + "CAP" + rs["CodCapMT"].ToString()
                                    + " bus1=" + "BMT" + rs["CodPonAcopl"].ToString()
                                    + fasesDSS + ".0" // OBS: o ".0" transforma em ligacao Y //OBS1
-                                   + ",Phases=1" 
+                                   + ",Phases=1"
                                    + ",Conn=LN"
                                    + ",Kvar=" + rs["PotNom_KVAr"].ToString()
                                    + ",Kv=" + kvbase + Environment.NewLine;
-                            
+
                             }
                             _arqCapacitor.Append(linha);
                         }
@@ -107,7 +106,7 @@ namespace ExportadorGeoPerdasDSS
 
         private string GetNomeArq()
         {
-            return _par._pathAlim + _alim + _capacitorMT;
+            return _par._pathAlim + _par._alim + _capacitorMT;
         }
 
         internal void GravaEmArquivo()

@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace ExportadorGeoPerdasDSS
+﻿namespace ExportadorGeoPerdasDSS
 {
     struct StrBoolElementosSDE
     {
@@ -17,8 +11,7 @@ namespace ExportadorGeoPerdasDSS
         public bool _temCargaMT;
         public bool _temCargaBT;
         public bool _temGeradorMT;
-        public bool _temGeradorBT; // TODO
+        public bool _temGeradorBT;
         public bool _temCapacitorMT;
-        public bool _hasPT; // has PostoTransformador (MV MV transformer)
     }
 }
