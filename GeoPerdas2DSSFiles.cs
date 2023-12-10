@@ -126,7 +126,7 @@ namespace ExportadorArqDSS
             _connBuilder.InitialCatalog = _banco;
             _connBuilder.IntegratedSecurity = false;
             _connBuilder.UserID = "U_DBPERTEC01";
-            _connBuilder.Password = "294vd!@49s$$3208tD#SS";
+            _connBuilder.Password = "";
 
             // variaveis auxiliares
             CarregaVariaveisAux();
