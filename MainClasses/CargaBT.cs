@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Text;
@@ -9,10 +10,10 @@ namespace ExportadorGeoPerdasDSS
     {
         // membros privados
         private static readonly string _cargaBT = "CargaBT_";
-        private static int _iMes;
-        private static string _ano;
-        private readonly Param _par;
         private static SqlConnectionStringBuilder _connBuilder;
+        private int _iMes;
+        private string _ano;
+        private readonly Param _par;
         private StringBuilder _arqSegmentoBT;
         private readonly List<List<int>> _numDiasFeriadoXMes;
         private readonly Dictionary<string, double> _somaCurvaCargaDiariaPU;
@@ -227,31 +228,59 @@ namespace ExportadorGeoPerdasDSS
         // A tensao base depende do numero de fases e tambem do trafo.
         private string GetTensaoBase(string numFases, string tipoTrafo)
         {
-            string retFases;
+            string tensoBase;
 
-            if (tipoTrafo.Equals("2")) // se trafo monofasico com tap central 
+            if (_par._dist.Equals("44"))
             {
-                if (numFases.Equals("1"))  // || numFases.Equals("2") ) 
+                if (tipoTrafo.Equals("2")) // se trafo monofasico com tap central 
                 {
-                    retFases = "0.12";
+                    if (numFases.Equals("1"))  // || numFases.Equals("2") ) 
+                    {
+                        tensoBase = "0.22";
+                    }
+                    else
+                    {
+                        tensoBase = "0.44";
+                    }
                 }
                 else
                 {
-                    retFases = "0.24";
+                    if (numFases.Equals("1")) //|| numFases.Equals("2") )
+                    {
+                        tensoBase = "0.22";
+                    }
+                    else
+                    {
+                        tensoBase = "0.38";
+                    }
                 }
             }
-            else
+            else // Cemig e etc
             {
-                if (numFases.Equals("1")) //|| numFases.Equals("2") )
+                if (tipoTrafo.Equals("2")) // se trafo monofasico com tap central 
                 {
-                    retFases = "0.127";
+                    if (numFases.Equals("1"))  // || numFases.Equals("2") ) 
+                    {
+                        tensoBase = "0.12";
+                    }
+                    else
+                    {
+                        tensoBase = "0.24";
+                    }
                 }
                 else
                 {
-                    retFases = "0.22";
+                    if (numFases.Equals("1")) //|| numFases.Equals("2") )
+                    {
+                        tensoBase = "0.127";
+                    }
+                    else
+                    {
+                        tensoBase = "0.22";
+                    }
                 }
             }
-            return retFases;
+            return tensoBase;
         }
 
         public string GetNomeArq()

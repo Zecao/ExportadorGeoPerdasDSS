@@ -8,9 +8,9 @@ namespace ExportadorGeoPerdasDSS
     {
         // membros privados
         private static readonly string _ramais = "Ramais.dss";
+        private static SqlConnectionStringBuilder _connBuilder;
         private Param _par;
         private readonly string _alim;
-        private static SqlConnectionStringBuilder _connBuilder;
         private StringBuilder _arqSegmentoBT;
 
         public RamalBT(SqlConnectionStringBuilder connBuilder, Param par)

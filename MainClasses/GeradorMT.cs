@@ -8,11 +8,10 @@ namespace ExportadorGeoPerdasDSS
     {
         // membros privador
         private static readonly string _geradorMT = "GeradorMT_";
-        private static int _iMes;
-
+        private static SqlConnectionStringBuilder _connBuilder;
+        private int _iMes;
         private StringBuilder _arqGeradorMT;
         private readonly Param _par;
-        private static SqlConnectionStringBuilder _connBuilder;
 
         public GeradorMT(SqlConnectionStringBuilder connBuilder, Param par, int iMes)
         {
@@ -89,10 +88,8 @@ namespace ExportadorGeoPerdasDSS
                                 hasAnyPVSystem = true;
                             }
 
-                            //defiir laodshape conforme tipo usina. 
-                            // curva PU
+                            // sets loadshape by gnerator type 
                             string linha = AuxFunc.GetLoadShape(tipGer, CodGeraMT);
-
 
                             // PVSystem
                             if (_par._pvMV._geraInvControl && tipGer.Equals("UFV"))

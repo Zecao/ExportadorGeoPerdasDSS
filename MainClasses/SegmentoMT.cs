@@ -1,27 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Linq;
 using System.Text;
 
 namespace ExportadorGeoPerdasDSS
 {
     class SegmentoMT
-    {
-        // arquivo do Excel com taxas de falhas (FaultRate) dos lineCodes
-        public static readonly string _arqDicReliability = "dictionayReliability.xlsx";
-
-        // membros privados
+    {        
+        public static readonly string _arqDicReliability = "dictionayReliability.xlsx"; // arquivo do Excel com taxas de falhas (FaultRate) dos lineCodes
         private static readonly string _segmentosMT = "SegmentosMT.dss";
         private static readonly string _coordMT = "CoordMT.csv";
+        private static SqlConnectionStringBuilder _connBuilder;
 
         private readonly bool _criaDispProtecao;
-        private static SqlConnectionStringBuilder _connBuilder;
         private StringBuilder _arqSegmentoMT;
         private StringBuilder _arqCoord;
         private readonly ModeloSDEE _SDEE;
         private readonly Dictionary<string, double> _dicLineCodeFaultRate;
 
-        public static Param _par;
+        private readonly Param _par;
 
         public SegmentoMT(SqlConnectionStringBuilder connBuilder, ModeloSDEE sdee, Param par, bool criaDispProtecao)
         {
@@ -39,7 +37,7 @@ namespace ExportadorGeoPerdasDSS
             }
         }
 
-        private static string GetNomeArqDicReliability()
+        private string GetNomeArqDicReliability()
         {
             return _par._path + _par._permRes + _arqDicReliability;
         }
@@ -298,40 +296,48 @@ namespace ExportadorGeoPerdasDSS
             string linha = "";
 
             // pega os pels 
-            for (int i = 0; i < dicCodPonAcopl.Count; i++)
+            for (int i = 0; i < dicCodPonAcopl.Count - 1; i++)
             {
-                // tratamento do ultimo elemento
-                if (i == dicCodPonAcopl.Count - 1)
-                {
-                    linha += "new line." + "TR" + "fic" + i.ToString()
-                        + " bus1=" + "BMT" + dicCodPonAcopl[i] + ".1.2.3"
-                        + ",bus2=" + "BMT" + "FIC" + ".1.2.3"
-                        + ",Phases=" + "3"
-                        + ",Linecode=" + "CAB"
-                        + ",Length=" + "0.001"
-                        + ",Units=km" + Environment.NewLine;
+                //new line.SMT_FIC_SE8 bus1 = CABFIC.1.2.3,bus2 = BMTFIC.1.2.3,Phases = 3,r1 = 0,x1 = 0.0001,Length = 0.001,Units = km
 
-                    _par._trEM = "TR" + "fic" + i.ToString();
-                }
-                else
-                {
-                    linha += "new line." + "TR" + "fic" + i.ToString()
-                       + " bus1=" + "BMT" + dicCodPonAcopl[i] + ".1.2.3"
-                       + ",bus2=" + "BMT" + dicCodPonAcopl[i + 1] + ".1.2.3"
-                       + ",Phases=" + "3"
-                       + ",Linecode=" + "CAB"
-                       + ",Length=" + "0.001"
-                       + ",Units=km" + Environment.NewLine;
-                }
+                string fic = "FIC_SE" + i.ToString();
+
+                linha += "new line." + fic
+                    + " bus1=" + "BMT" + dicCodPonAcopl[i] + ".1.2.3"
+                    + ",bus2=" + "BMT" + dicCodPonAcopl[i + 1] + ".1.2.3"
+                    + ",Phases=" + "3"
+                    + ",r1=0,x1=0.0001"
+                    + ",Length=" + "0.001"
+                    + ",Units=km" + Environment.NewLine;
             }
+
+            linha += "new line." + "FIC_SE" + dicCodPonAcopl.Count.ToString()
+                + " bus1=" + "BMT" + dicCodPonAcopl.Last() + ".1.2.3"
+                + ",bus2=" + "BMTFIC" + ".1.2.3" // OBS: BMTFIC
+                + ",Phases=" + "3"
+                + ",r1=0,x1=0.0001"
+                + ",Length=" + "0.001"
+                + ",Units=km" + Environment.NewLine;
+
+            _par._trEM = "FIC";
+
+            // Cria mais 1 trecho ficticio unido ao ultimo de dicCodPonAcopl
+            linha += "new line." + "SMT_" + _par._trEM // OBS: if changing the name CABFIC must chang in CircMT class, as well.
+                + " bus1=" + "CABFIC" +  ".1.2.3" // OBS: if changing the name CABFIC must chang in CircMT class, as well.
+                + ",bus2=" + "BMTFIC" + ".1.2.3" // OBS: BMTFIC
+                + ",Phases=" + "3"
+                + ",r1=0,x1=0.0001"
+                + ",Length=" + "0.001"
+                + ",Units=km" + Environment.NewLine;
+
             _arqSegmentoMT.Append(linha);
 
             return true;
         }
-
+        /* //OLD CODE
         internal Param GetParam()
         {
             return _par;
-        }
+        }*/
     }
 }

@@ -75,6 +75,7 @@
   <ItemGroup>
     <Compile Include="AuxClasses\PVSystemPar.cs" />
     <Compile Include="AuxClasses\Param.cs" />
+    <Compile Include="MainClasses\LineCodes.cs" />
     <Compile Include="MainClasses\ClassificaCurvaBT.cs" />
     <Compile Include="MainClasses\CircMT.cs" />
     <Compile Include="MainClasses\GeradorMT.cs" />

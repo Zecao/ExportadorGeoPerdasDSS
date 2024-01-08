@@ -8,9 +8,9 @@ namespace ExportadorGeoPerdasDSS
     {
         // membros privador
         private static readonly string _capacitorMT = "CapacitorMT.dss";
+        private static SqlConnectionStringBuilder _connBuilder;
         private StringBuilder _arqCapacitor;
         private readonly Param _par;
-        private static SqlConnectionStringBuilder _connBuilder;
 
         public CapacitorMT(SqlConnectionStringBuilder connBuilder, Param par)
         {

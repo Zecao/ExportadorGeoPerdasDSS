@@ -7,9 +7,8 @@ namespace ExportadorGeoPerdasDSS
 {
     class ClassificaCurvaBT
     {
-        // membros privados
-        private readonly Param _par;
         private static SqlConnectionStringBuilder _connBuilder;
+        private readonly Param _par;
         private StringBuilder _arqSegmentoBT;
         private Dictionary<string, List<double>> _percentuaisCurva;
         public ClassificaCurvaBT(SqlConnectionStringBuilder connBuilder,

@@ -1,6 +1,4 @@
-﻿using AuxClasses;
-using ConsoleApplication2.MainClasses;
-using ExportadorGeoPerdasDSS;
+﻿using ExportadorGeoPerdasDSS;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
@@ -10,30 +8,19 @@ namespace ExportadorArqDSS
     class GeoPerdas2DSSFiles
     {
         // codbase
-        public static string _codBase = "20221244"; //"2022114950"; //"2021124950"; //"2020014950";  
-        public static string _schema = "dbo.";//"geo2023."; //"geo2022."; //""; //"geo2021." geo2022;
-        public static string _dist = "44";
+        public static string _codBase = "2022114950"; //"2022114950"; //"2021124950"; //"2021124950"; //"2020014950"; // "4950"; 
+        public static string _schema = "geo."; //"geo2021."; //"geo."; //"geo."; //"";
 
         // mes e ano para a geracao dos arquivos de carga BT e MT
-        public static int _iMes = 12; //   PVSYstemBT 3,4,5,6 2023
-        public static string _ano = "2022"; // 2021 //2022
+        public static int _iMes = 12;
+        public static string _ano = "2022"; // 2021
 
         public static bool _criaTodosOsMeses = false;  // flag p/ criar todos os meses de carga MT BT e geradores
-        public static bool _criaArqCoordenadas = true; // flag p/ criar arq coordenadas
-
-        /* 
-        Parameters order _modelPVSystems, _invControlModeMV, _varFollowInvMV, _PVPowerFactorMV
-
-        _modelPVSystems     -> False = exports PVSystems as generator model=1
-        _geraInvControl     _> true to generate invControl
-        _invControlModeMV   -> Default: "VOLTVAR" "voltwatt"
-        _varFollowInvMV     -> Default: false (Have to set False to enable Inverter night mode)
-        _voltVarcurve =     -> Default: "voltvar_c"
-        */
-        public static readonly PVSystemPar _pvMV = new PVSystemPar(true, true); 
-        public static readonly PVSystemPar _pvLV = new PVSystemPar(false, false);
-
+        public static bool _criaArqCoordenadas = false; // flag p/ criar arq coordenadas
+        public static bool _modelPVSystems = false; // false = exports PVSystems as generator model=1
+        public static string _invControlMode = "VOLTVAR"; //"VOLTVAR";//"voltwatt"; // 
         public static bool _criaDispProtecao = false; // flag p/ dispositivos de protecao (Recloser e Fuses) && taxas de falhas em lines
+
         public static bool _modelo4condutores = false; //modelo 4 condutor BT
 
         // cria arquivo DSS com 2 alimentadores para uso da Reconfiguracao
@@ -50,44 +37,50 @@ namespace ExportadorArqDSS
 
         // arquivo do Excel com curvas individuais dos clientes primarios
         public static readonly string _arqCurvaCargaCliMT = "curvasTipicasClientesMT_2018.xlsx";
-
+        
         // prefixo arquivo .txt de feriados
         public static string _feriado = "Feriado"; //arquivo de feriado
 
         // path do APP - CASA
-        //public static readonly string _path = @"F:\DropboxZecao\Dropbox\0doutorado\0soft\0alimCemig\";
+        //public static readonly string _path = @"F:\DropboxZecao\Dropbox2018\Dropbox\01_4950_P\";
+        //public static readonly string _path = @"F:\DropboxZecao\Dropbox2018\Dropbox\01_4950_RECONF\";
+        //public static readonly string _path = @"F:\DropboxZecao\Dropbox2018\Dropbox\Dropbox\0doutorado\0soft\0alimCemig\1CemigDFeeders\";
+        //public static readonly string _path = @"F:\DropboxZecao\Dropbox2018\Dropbox\Dropbox\0doutorado\0soft\0alimCemig\1CemigDSAIDI\";
+        //public static readonly string _path = @"\0_alimTese\t2\";
 
-        //CEMIG - Servidor Pertec
-        //public static readonly string _path = @"\\pwnap-pertec01\OPenDSSCemig\2022_reconf\";
-        //public static readonly string _path = @"\\pwnap-pertec01\OPenDSSCemig\2022_CAP\";
-        //public static readonly string _path = @"\\pwnap-pertec01\OPenDSSCemig\2023_2\";
+        //CEMIG - 2022
+        public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2022\01_4950_P\";
+        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2022\02_4950_Reconf\";
 
-        public static readonly string _path = @"F:\DropboxZecao\Dropbox\0doutorado\0soft\0alimCemig\ALAGOAS\";
-        //public static readonly string _path = @"F:\DropboxZecao\Dropbox\0doutorado\0soft\0alimCemig\ALAGOAS_SE\";
-        //public static readonly string _path = @"D:\Users\c055896.NETCEMIG\Desktop\OpenDSSLocal\01_voltvar_PF1\";
-        //public static readonly string _path = @"D:\Users\c055896.NETCEMIG\Desktop\OpenDSSLocal\01_voltvar\";
-        //public static readonly string _path = @"D:\Users\c055896.NETCEMIG\Desktop\OpenDSSLocal\01_voltvar_Noite\";
+        //CEMIG - 2021
+        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2021\01_4950_P\";
+        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2021\01_4950_ART\";     
+        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2021\01_4950_ART_PF1\";
+        //public static readonly string _path = @"D:\Users\c055896.NETCEMIG\Desktop\01_4950_NOVO\";
+        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2021\01_4950_atipicos_Leandro\";
+        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2021\01_4950_atipicos_UsinasLM1\";        
+        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2021\01_4950_atipicos_SemUsinas\";
+        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2021\01_4950_BDGDDaimon\";
+        //public static readonly string _path = @"I:\SA\GRMP\PERDAS-TECNICAS\0perdasTecnicasOpenDSS\2021\01_4950_reconf\";
 
         // TODO FIX this hard coded 
         // sub diretorio recursos permanentes
         public static string _permRes = "0PermRes\\";
 
         // servidor SGBD
-        public static string _banco = "GEOPERDAS2022_AL"; // GEOPERDAS_2022 GEOPERDAS_2021 GEOPERDAS_2020 GEOPERDAS_2019 
+        public static string _banco = "GEOPERDAS_2022"; // "GEOPERDAS_2S2021"; //"GEO_SIGR_DBPERTEC01"; //""; //  "GEO_SIGR_PERDAS_2S2021"; // //GEOPERDAS_2020 ""; //"GEOPERDAS_2019";  
 
         // banco
-        //public static string _dataSource = @"PWNBS-PERTEC01\PTEC";
-        public static string _dataSource = @"DESKTOP-5IU9LKI\MSSQLSERVER2"; 
+        public static string _dataSource = @"PWNBS-PERTEC01\PTEC"; //@"sa-corp-sql0";
 
-        // parametros ALAGOAS
-        private readonly static ModeloSDEE _SDEE = new ModeloSDEE(usarCondutoresSeqZero: false, utilizarCurvaDeCargaClienteMTIndividual: false, incluirCapacitoresMT: false, modeloCarga: "PCONST",
-           reatanciaTrafos: true);
+        //Modelo PADRAO (GeoPerdas ANEEL)
+        //OBS: Capacitor pode ser colocado na hora da execucao
+        //private static ModeloSDEE _SDEE = new ModeloSDEE(usarCondutoresSeqZero: false, utilizarCurvaDeCargaClienteMTIndividual: false, incluirCapacitoresMT: false, modeloCarga: "ANEEL",
+        //    reatanciaTrafos: false);
 
-        // parametros CEMIG
-        /*
-        private readonly static ModeloSDEE _SDEE = new ModeloSDEE(usarCondutoresSeqZero: false, utilizarCurvaDeCargaClienteMTIndividual: false, incluirCapacitoresMT: true, modeloCarga: "PCONST",
+        // sim3 modelo de carga PCONST
+        private static ModeloSDEE _SDEE = new ModeloSDEE(usarCondutoresSeqZero: false, utilizarCurvaDeCargaClienteMTIndividual: false, incluirCapacitoresMT: true, modeloCarga: "PCONST",
            reatanciaTrafos: true);
-        */
 
         // FIM membros publicos -> parametros configuraveis usuario
 
@@ -98,8 +91,8 @@ namespace ExportadorArqDSS
 
         private static StrBoolElementosSDE _structElem;
 
-        // arquivo de coordenadas
-        private static readonly string _coordMT = "CoordMT.csv";
+        // arquivo de coordenadas //TODO
+        private static readonly string _coordMT = "CoordMT.csv"; 
 
         // obtem Lista com numero de feriados mes X Mes
         private static List<List<int>> _numDiasFeriadoXMes;
@@ -107,24 +100,18 @@ namespace ExportadorArqDSS
         // utilizado por CargaMT e CargaBT
         private static Dictionary<string, double> _somaCurvaCargaDiariaPU;
 
-        // OLD CODE
         // utilizado por CargaMT e CargaBT
         private static Dictionary<string, List<string>> _curvasTipicasClientesMT;
 
-        static void Main() //string[] args
+        static void Main(string[] args)
         {
             // parametros banco de dados
             _connBuilder = new SqlConnectionStringBuilder();
             _connBuilder.DataSource = _dataSource;
             _connBuilder.InitialCatalog = _banco;
-            _connBuilder.IntegratedSecurity = true;
-
-            _connBuilder.UserID = "Zecao"; // "Zecao";//@"DESKTOP-5IU9LKI\Zecao";
-            _connBuilder.Password = ""; 
-
-            /* //DEBUG
-            SqlConnection conn = new SqlConnection(_connBuilder.ToString());
-            conn.Open();*/
+            _connBuilder.IntegratedSecurity = false;
+            _connBuilder.UserID = "U_DBPERTEC01";
+            _connBuilder.Password = "294vd!@49s$$3208tD#SS";
 
             // variaveis auxiliares
             CarregaVariaveisAux();
@@ -143,67 +130,6 @@ namespace ExportadorArqDSS
             Console.ReadKey();
         }
 
-        // cria arquivos DSS
-        private static void CriaArquivosDSS()
-        {
-            //Cria o diretório do alimentador, caso não exista
-            if (!System.IO.Directory.Exists(_par._pathAlim))
-            {
-                System.IO.Directory.CreateDirectory(_par._pathAlim);
-            }
-
-            // Create Condutores.dss file
-            //Create_LineCodes_DSSFile();
-
-            // UNDER CONSTRUCTION
-            // Create LoadShape .dss files
-            //Create_LoadShapes_DSSFile();
-            /*
-            // Segmento MT
-            CriaSegmentoMTDSS();
-            
-            // Se nao tem segmento, aborta 
-            if (!_structElem._temSegmentoMT)
-            {
-                return;
-            }
-            
-            // Regulador MT
-            CriaReguladorMTDSS();
-            
-            // Chave MT
-            CriaChaveMT();
-            
-            // Transformador MT
-            CriaTransformadorMTMTMTBTDSS();
-            
-            // Capacitor
-            if (_SDEE._incluirCapacitoresMT)
-            {
-                CriaCapacitorMTDSS();
-            }
-            
-            CriaSegmentoBTDSS();
-
-            // Ramais 
-            CriaRamaisDSS();
-
-            // Carga MT
-            CriaCargaMTDSS();
-            
-            // Carga BT
-            CriaCargaBTDSS();
-            */
-            // Gerador MT
-            CriaGeradorMT();
-            /*
-            // Gerador BT
-            CriaGeradorBT();
-            
-            // arquivo cabecalho
-            CriaCabecalhoDSS();*/
-        }
-
         // Generates entire substation
         private static void GenSubstationDSSFiles()
         {
@@ -211,29 +137,25 @@ namespace ExportadorArqDSS
 
             List<string> lstAlim = CemigFeeders.GetAllFeedersFromTxtFile(GetNomeArqLstAlimentadores());
 
-            _par = new Param(_path, _permRes, _codBase, _modelo4condutores, _schema, "", _ano, _pvMV, _pvLV, _dist);
-
             // para cada SE da lista
             foreach (string alim in lstAlim)
             {
-                // sets current feeder
-                _par.SetCurrentAlim(alim);
-
-                // gets substation // TODO refactory
+                // get substation
                 string substation = System.Text.RegularExpressions.Regex.Replace(alim, @"[\d-]", string.Empty);
+
+                _par = new Param(_path, _permRes, _codBase, "", _modelo4condutores, _schema, _modelPVSystems, alim, _invControlMode);
+
                 //
-                substation = "ARD";
+                string lstAlimSE = CemigFeeders.GetAllFeedersFromSubstationString(substation, _connBuilder, _par);
 
-                // gets all feeders name from substation //TODO move to Param ?
-                bool ret = CemigFeeders.GetAllFeedersFromSubstationString(substation, _connBuilder, _par);
-
-                if (_par._conjAlim == null)
+                if (lstAlimSE == null)
                 {
                     Console.Write(substation + " não encontrado!\n");
                     continue;
                 }
+                // adds lst feeders in _par object
+                _par._conjAlim = lstAlimSE;
 
-                // creates dss files
                 CriaArquivosDSS();
             }
         }
@@ -244,67 +166,81 @@ namespace ExportadorArqDSS
             // lista de alimentadores
             List<string> lstAlim = CemigFeeders.GetAllFeedersFromTxtFile(GetNomeArqLstAlimentadores());
 
-            _par = new Param(_path, _permRes, _codBase, _modelo4condutores, _schema, "", _ano, _pvMV, _pvLV, _dist);
-
             // para cada alimentador da lista
             foreach (string alim in lstAlim)
             {
-                // sets current feeder
-                _par.SetCurrentAlim(alim);
+                _par = new Param(_path, _permRes, _codBase, "", _modelo4condutores, _schema, _modelPVSystems, alim, _invControlMode);
 
-                // creates dss files
                 CriaArquivosDSS();
 
-                // TODO
                 //ClassificaCurvaBT curvaBT = new ClassificaCurvaBT(_connBuilder, _par);
             }
-        }
+        }        
 
         private static string GetNomeArqLstAlimentadores()
         {
             return _path + _permRes + _arqLstAlimentadores;
         }
 
-        private static void CriaGeradorBT()
+        // cria arquivos DSS
+        private static void CriaArquivosDSS()
         {
-            if (_criaTodosOsMeses)
+            //Cria o diretório do alimentador, caso não exista
+            if (!System.IO.Directory.Exists(_par._pathAlim))
             {
-                // repete para cada mes
-                for (int i = 1; i < 13; i++)
-                {
-                    _iMes = i;
-
-                    //
-                    CriaGeradorBTPvt();
-                }
+                System.IO.Directory.CreateDirectory(_par._pathAlim);
+            }                
+            
+            // Segmento MT
+            CriaSegmentoMTDSS();  
+            
+            // Se nao tem segmento, aborta 
+            if (!_structElem._temSegmentoMT)
+            { 
+                return;
             }
-            else
+            
+            // Regulador MT
+            CriaReguladorMTDSS(); 
+            
+            // Chave MT
+            CriaChaveMT();              
+            
+            // Transformador MT
+            CriaTransformadorMTMTMTBTDSS();     
+            
+            // Capacitor
+            if ( _SDEE._incluirCapacitoresMT )
             {
-                //
-                CriaGeradorBTPvt();
+                CriaCapacitorMTDSS();
             }
-        }
-
-        private static void CriaGeradorBTPvt()
-        {
-            GeradorBT oGerBT = new GeradorBT(_connBuilder, _par, _iMes);
-
-            // realiza consulta  
-            _structElem._temGeradorBT = oGerBT.ConsultaBanco(_genAllSubstation);
-
-            if (_structElem._temGeradorBT)
-            {
-                oGerBT.GravaEmArquivo();
-            }
+            
+            CriaSegmentoBTDSS();
+            
+            // Ramais 
+            CriaRamaisDSS();         
+            
+            // Carga MT
+            CriaCargaMTDSS();  
+            
+            // Carga BT
+            CriaCargaBTDSS();
+            
+            /*
+            // Gerador MT
+            CriaGeradorMT(); 
+            */
+            // arquivo cabecalho            
+            CriaCabecalhoDSS();
         }
 
         private static void CarregaVariaveisAux()
         {
             // obtem Lista com numero de feriados mes X Mes
-            _numDiasFeriadoXMes = AuxFunc.Feriados(GetNomeArqFeriado());
+            _numDiasFeriadoXMes = AuxFunc.Feriados(_ano, GetNomeArqFeriado());         
 
             // preenche Dic de soma Carga Mensal - Utilizado por CargaMT e CargaBT
-            _somaCurvaCargaDiariaPU = XLSXFile.XLSX2Dictionary(GetNomeArqConsumoMensalPU());
+            _somaCurvaCargaDiariaPU = XLSXFile.XLSX2Dictionary(GetNomeArqConsumoMensalPU()); 
 
             // preenche Dic com curvas de carga INDIVIDUAIS da CargaMT
             if (_SDEE._utilizarCurvaDeCargaClienteMTIndividual)
@@ -317,10 +253,10 @@ namespace ExportadorArqDSS
         {
             return _path + _permRes + _arqCurvaCargaCliMT;
         }
-
+                
         private static string GetNomeArqConsumoMensalPU()
         {
-            return _path + _permRes + _arqConsumoMensalPU;
+            return _path + _permRes +_arqConsumoMensalPU;
         }
 
         // nome arquivo feriado
@@ -342,7 +278,7 @@ namespace ExportadorArqDSS
                     CriaGeradorMTPvt();
                 }
             }
-            else
+            else 
             {
                 //
                 CriaGeradorMTPvt();
@@ -350,9 +286,9 @@ namespace ExportadorArqDSS
         }
 
         //
-        private static void CriaGeradorMTPvt()
+        private static void CriaGeradorMTPvt() 
         {
-            GeradorMT oGerMT = new GeradorMT(_connBuilder, _par, _iMes);
+            GeradorMT oGerMT = new GeradorMT( _connBuilder, _par, _iMes);
 
             // realiza consulta  
             _structElem._temGeradorMT = oGerMT.ConsultaBanco(_genAllSubstation);
@@ -360,7 +296,7 @@ namespace ExportadorArqDSS
             if (_structElem._temGeradorMT)
             {
                 oGerMT.GravaEmArquivo();
-            }
+            } 
         }
 
         private static void CriaChaveMT()
@@ -394,7 +330,7 @@ namespace ExportadorArqDSS
         // cria arquivo dss de segmentos de MT
         private static void CriaSegmentoMTDSS()
         {
-            SegmentoMT oSegMT = new SegmentoMT(_connBuilder, _SDEE, _par, _criaDispProtecao);
+            SegmentoMT oSegMT = new SegmentoMT(_connBuilder, _SDEE, _par, _criaDispProtecao );
 
             // realiza consulta StoredSegmentoMT 
             _structElem._temSegmentoMT = oSegMT.ConsultaStoredSegmentoMT(_genAllSubstation);
@@ -407,10 +343,8 @@ namespace ExportadorArqDSS
             {
                 oSegMT.GravaEmArquivo();
 
-                /* // OLD CODE
                 // atualiza parametros 
-                _par = oSegMT.GetParam();
-                */
+                _par = oSegMT.GetParam(); 
 
                 // se modo criar arq coordenadas
                 if (_criaArqCoordenadas)
@@ -431,7 +365,7 @@ namespace ExportadorArqDSS
 
         private static void CriaTransformadorMTMTMTBTDSS()
         {
-            Trafo oTrafo = new Trafo(_connBuilder, _par, _SDEE);
+            Trafo oTrafo = new Trafo( _connBuilder, _par, _SDEE );
 
             // realiza consulta StoredReguladorMT 
             _structElem._temTransformador = oTrafo.ConsultaBanco(_genAllSubstation);
@@ -444,7 +378,7 @@ namespace ExportadorArqDSS
 
         private static void CriaSegmentoBTDSS()
         {
-            SegmentoBT oSegBT = new SegmentoBT(_connBuilder, _par);
+            SegmentoBT oSegBT = new SegmentoBT( _connBuilder, _par);
 
             // realiza consulta 
             _structElem._temSegmentoBT = oSegBT.ConsultaBanco(_genAllSubstation);
@@ -457,7 +391,7 @@ namespace ExportadorArqDSS
 
         private static void CriaRamaisDSS()
         {
-            RamalBT oRamal = new RamalBT(_connBuilder, _par);
+            RamalBT oRamal = new RamalBT( _connBuilder, _par);
 
             // realiza consulta 
             _structElem._temRamal = oRamal.ConsultaBanco(_genAllSubstation);
@@ -466,7 +400,7 @@ namespace ExportadorArqDSS
             {
                 oRamal.GravaEmArquivo();
             }
-        }
+        } 
 
         private static void CriaCargaMTDSS()
         {
@@ -482,7 +416,7 @@ namespace ExportadorArqDSS
                     CriaCargaMTDSSPvt();
                 }
             }
-            else
+            else 
             {
                 // 
                 CriaCargaMTDSSPvt();
@@ -518,8 +452,8 @@ namespace ExportadorArqDSS
                     CriaCargaBTDSSPvt();
                 }
             }
-            else
-            {
+            else 
+            { 
                 //
                 CriaCargaBTDSSPvt();
             }
@@ -536,7 +470,7 @@ namespace ExportadorArqDSS
             if (_structElem._temCargaBT)
             {
                 oCargaBT.GravaEmArquivo();
-            }
+            }           
 
         }
 
@@ -564,41 +498,42 @@ namespace ExportadorArqDSS
                 _structElem, _iMes, _coordMT);
 
             // realiza consulta 
-            oCircMT.ConsultaStoredCircMT();
+            List<string> infoCabecalho = oCircMT.ConsultaStoredCircMT();
 
-            if (! oCircMT._strCab.Equals(""))
+            if (infoCabecalho != null)
             {
                 // grava arquivo para ser utilizado pela OpenDSS 
-                ArqManip.SafeDelete(GetNomeArq_Master());
+                ArqManip.SafeDelete(GetNomeArqCabecalho());
 
-                ArqManip.GravaEmArquivo(oCircMT._stringMasterDSS_A, GetNomeArq_Master()); 
-
-                // arquivo para ser utilizado pela customizacao COM do OpenDSS
-                ArqManip.SafeDelete(GetNomeArq_ForCustomCSharp());
-
-                ArqManip.GravaEmArquivo(oCircMT._strCab, GetNomeArq_ForCustomCSharp());
+                ArqManip.GravaEmArquivo(infoCabecalho[0], GetNomeArqCabecalho());
 
                 // arquivo para ser utilizado pela customizacao COM do OpenDSS
-                ArqManip.SafeDelete(GetNomeArq_AnualB());
+                ArqManip.SafeDelete(GetNomeArqCabecalhoCOM());
 
-                ArqManip.GravaEmArquivo(oCircMT._stringMasterDSS_B, GetNomeArq_AnualB());
+                ArqManip.GravaEmArquivo(infoCabecalho[1], GetNomeArqCabecalhoCOM());
+
+                // arquivo para ser utilizado pela customizacao COM do OpenDSS
+                ArqManip.SafeDelete(GetNomeArquivoB());
+
+                ArqManip.GravaEmArquivo(infoCabecalho[2], GetNomeArquivoB());
             }
         }
 
-        private static string GetNomeArq_AnualB()
+        private static string GetNomeArquivoB()
         {
             return _par._pathAlim + _par._alim + "AnualB.dss";
         }
 
-        private static string GetNomeArq_ForCustomCSharp()
+        private static string GetNomeArqCabecalhoCOM()
         {
             return _par._pathAlim + _par._alim + ".dss";
         }
 
-        private static string GetNomeArq_Master()
+        private static string GetNomeArqCabecalho()
         {
             return _par._pathAlim + _par._alim + "AnualA.dss";
         }
+
     }
 }
 

@@ -6,13 +6,23 @@ namespace ExportadorGeoPerdasDSS
 {
     class CircMT
     {
-        private static Param _par;
+        private Param _par;
         private static SqlConnectionStringBuilder _connBuilder;
-        private static bool _modoReconf;
-        private static bool _criaArqCoordenadas;
-        private static StrBoolElementosSDE _structElem;
-        private static int _iMes;
-        private static string _coordMT;
+        private readonly bool _modoReconf;
+        private readonly bool _criaArqCoordenadas;
+        private StrBoolElementosSDE _structElem;
+        private int _iMes;
+        private string _coordMT;
+
+        private string _Alim_PAC = "";
+        private string _TenNom_kV = "";
+        private string _TenOpe_pu = "";
+        private string _linhaEM = "";
+
+        // strings de saida
+        public string _stringMasterDSS_A; 
+        public string _stringMasterDSS_B;
+        public string _strCab;
 
         public CircMT(SqlConnectionStringBuilder connBuilder, Param par, bool modoReconfiguracao,
             bool criaArqCoordenadas, StrBoolElementosSDE structElem, int iMes, string coordMT)
@@ -26,7 +36,7 @@ namespace ExportadorGeoPerdasDSS
             _coordMT = coordMT;
         }
 
-        private static string GetNomeArqCoord()
+        private string GetNomeArqCoord()
         {
             return _par._alim + _coordMT;
         }
@@ -62,31 +72,51 @@ namespace ExportadorGeoPerdasDSS
 
         Solve mode=daily  hour=0 number=24 stepsize=1h
         */
-        public List<string> ConsultaStoredCircMT()
+        public void ConsultaStoredCircMT()
         {
-            string stringMasterDSS_A = "";
+            // Obtem PAC inicio alim, tensoes base, operacao e trecho p/ alocar Energymeter
+            Get_PAC_CTMT();
 
-            string strCab = "";
+            // cria String MasterDSS Parte A
+            _stringMasterDSS_A = CriaStringMasterDSS_ParteA(); 
 
-            string stringMasterDSSP_B = "";
+            // cria String MasterDSS Parte B
+            _stringMasterDSS_B = CriaStringMasterDSS_ParteB();
+
+            // OBS: As partes A e B são adicionadas e posteriormente gravadas e um único arquivo 
+            // com a seguinte nomenclaura XXXAnualA.dss, onde XXX eh o nome do alimentador
+            // OBS: A parte B eh gravada com o nome XXXAnualB eh utilizada pela customização "ExecutorOpenDSS"
+            _stringMasterDSS_A += _stringMasterDSS_B;
+
+            // cria string arquivo MasterDSS que sera utilizada pela customizacao "ExecutorOpenDSS"
+            // com a seguinte nomenclaura XXX.dss, onde XXX eh o nome do alimentador
+            _strCab = CriaStrCabecalhoCustomizacao();
+        }
+
+        // Obtem PAC inicio alim, tensoes base, operacao e trecho p/ alocar Energymeter
+        private void Get_PAC_CTMT()
+        {
+            string trechEM;
 
             using (SqlConnection conn = new SqlConnection(_connBuilder.ToString()))
             {
                 conn.Open();
+
                 using (SqlCommand command = conn.CreateCommand())
                 {
-                    // consulta
-                    command.CommandText = "select TenNom_kV,TenOpe_pu,CodPonAcopl from " + _par._DBschema + "storedcircmt ";
+                    //Verifica se há mais de 1 trecho saindo do PelPrincipal
+                    command.CommandText = "select CodPonAcopl,TenNom_kV,TenOpe_pu,CodSegmMT,count(CodSegmMT) over() as 'rowCount' from " + _par._DBschema + "StoredCircmt as [ct]"
+                        + "inner join " + _par._DBschema + "StoredSegmentoMT as [seg] on [seg].CodPonAcopl1 = [ct].CodPonAcopl ";
 
                     // se modo reconfiguracao 
                     if (_modoReconf)
                     {
-                        command.CommandText += "where CodBase=@codbase and CodAlim in (" + _par._conjAlim + ")";
+                        command.CommandText += "where [ct].CodBase=@codbase and [ct].CodAlim in (" + _par._conjAlim + ")";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                     }
                     else
                     {
-                        command.CommandText += "where CodBase=@codbase and CodAlim=@CodAlim";
+                        command.CommandText += "where [ct].CodBase=@codbase and [ct].CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
                         command.Parameters.AddWithValue("@CodAlim", _par._alim);
                     }
@@ -99,51 +129,76 @@ namespace ExportadorGeoPerdasDSS
                         if (!rs.HasRows)
                         {
                             Console.Write(_par._alim + ": não localizado na StoredCircMT");
-                            return null;
                         }
                         else
                         {
-                            // cria String MasterDSS Parte A
-                            stringMasterDSS_A = CriaStringMasterDSS_ParteA(rs);
+                            // PAC ALIM
+                            _Alim_PAC = "BMT" + rs["CodPonAcopl"].ToString(); //OBS: necessario adicionar prefixo BMT TODO
+                            _TenNom_kV = rs["TenNom_kV"].ToString();
+                            _TenOpe_pu = rs["TenOpe_pu"].ToString();
 
-                            // cria String MasterDSS Parte B
-                            stringMasterDSSP_B = CriaStringMasterDSS_ParteB(rs);
 
-                            // OBS: As partes A e B são adicionadas e posteriormente gravadas e um único arquivo 
-                            // com a seguinte nomenclaura XXXAnualA.dss, onde XXX eh o nome do alimentador
-                            // OBS: A parte B eh gravada com o nome XXXAnualB eh utilizada pela customização "ExecutorOpenDSS"
-                            stringMasterDSS_A += stringMasterDSSP_B;
+                            // preenche trecho Energymeter
+                            if (rs["rowCount"].ToString().Equals("1"))
+                            {
+                                trechEM = rs["CodSegmMT"].ToString();
+                            }
+                            // se ha mais de 1 trecho p/ o PAC de inicio do alim, cria trecho ficticio a montante
+                            else
+                            {
+                                Console.Write("Há mais de 1 trecho para alocação do Energymeter! " + _par._alim + Environment.NewLine);
 
-                            // cria string arquivo MasterDSS que sera utilizada pela customizacao "ExecutorOpenDSS"
-                            // com a seguinte nomenclaura XXX.dss, onde XXX eh o nome do alimentador
-                            strCab = CriaStrCabecalhoCustomizacao(rs);
+                                // trecho ficticio p/ correcao 
+                                trechEM = "FIC";
+
+                                // atualiza PAC Alim
+                                string oldPac = _Alim_PAC; //mas antes guarda old PAC p/ ser usado abaixo. 
+                                _Alim_PAC = "CABFIC";
+
+                                // linha Energymeter
+                                _linhaEM += "new line." + "SMT_" + trechEM + " bus1=" + _Alim_PAC + ".1.2.3,bus2=" + oldPac + ".1.2.3,Phases=3,r1=0,x1=0.0001,Length=0.001,Units=km" + Environment.NewLine;
+                            }
+
+                            if (_modoReconf)
+                            {
+                                _Alim_PAC = "CABFIC";
+                            }
+
+                            // cria linha de alocacao Energymeter //OBS: necessario adicionar prefixo "_SMT"
+                            _linhaEM += "new energymeter.carga element=line." + "SMT_" + trechEM + ",terminal=1" + Environment.NewLine;
                         }
                     }
                 }
+
+                conn.Close();
             }
-            // concatena resultados
-            return new List<string> { stringMasterDSS_A, strCab, stringMasterDSSP_B };
         }
 
         // Cria Str Energymeter e comandos adicionais
-        private static string CriaStringMasterDSS_ParteB(SqlDataReader rs)
+        private string CriaStringMasterDSS_ParteB()
         {
             string linha = "";
 
+            // 
             if (_modoReconf)
             {
                 // OBS: aloca medidor no terminal 2
-                linha = Environment.NewLine + "new energymeter.carga element=line." + _par._trEM
-                    + ",terminal=2" + Environment.NewLine; //OBS1
+                linha = Environment.NewLine + "new energymeter.carga element=line." + "SMT_"+ _par._trEM + ",terminal=1" + Environment.NewLine;
             }
             else
             {
-                linha = Environment.NewLine + "new energymeter.carga element=line." + "SMT_" + GetTrechoEnergyMeter(rs["CodPonAcopl"].ToString())
-                    + ",terminal=1" + Environment.NewLine; //OBS1
+                linha = _linhaEM;
             }
 
-            // voltage bases
-            linha += Environment.NewLine + "Set voltagebases=[" + rs["TenNom_kV"].ToString() + " 0.24 0.22]" + Environment.NewLine;
+            // voltage bases // TODO
+            if (_par._dist.Equals("44"))
+            {
+                linha += Environment.NewLine + "Set voltagebases=[" + _TenNom_kV + " 0.38 0.44]" + Environment.NewLine;
+            }
+            else // TODO padrao tensao Cemig
+            {
+                linha += Environment.NewLine + "Set voltagebases=[" + _TenNom_kV + " 0.24 0.22]" + Environment.NewLine;
+            }
 
             // CalcVoltageBases
             linha += "CalcVoltageBases" + Environment.NewLine;
@@ -169,54 +224,48 @@ namespace ExportadorGeoPerdasDSS
             return linha;
         }
 
-        private static string CriaStrCabecalhoCustomizacao(SqlDataReader rs)
+        private string CriaStrCabecalhoCustomizacao()
         {
             string linha = "! manter este comentario para compatibilidade do C#" + Environment.NewLine;
 
             // add linha circuito
-            linha += CriaStrCircuit(rs);
+            linha += CriaStrCircuit();
 
             return linha;
         }
 
-        private static string CriaStrCircuit(SqlDataReader rs)
+        private string CriaStrCircuit()
         {
+            // modelo
+            // new circuit.alimAFNU16 bus1=BMT155673172,basekv=13.8,pu=
+            return "new circuit.alim" + _par._alim
+            + " bus1=" + _Alim_PAC // OBS: + ".1.2.3"
+            + ",basekv=" + _TenNom_kV
+            + ",pu=" + _TenOpe_pu
+            + ",r1=0,x1=0.0001"
+            + Environment.NewLine + Environment.NewLine;
+
+            /* OLD CODE
             //New "Circuit.AXAU03" basekv=13.8 pu=1.04 bus1="179780895" r1=0 x1=0.0001
             if (_modoReconf)
             {
                 return "new circuit.alim" + _par._alim
-                + " bus1=" + "BMT" + "FIC" // OBS: + ".1.2.3"
-                + ",basekv=" + rs["TenNom_kV"].ToString()
-                + ",pu=" + rs["TenOpe_pu"].ToString()
+                + " bus1=" + "CABFIC" // OBS: + ".1.2.3"
+                + ",basekv=" + _TenNom_kV 
+                + ",pu=" + _TenOpe_pu 
                 + ",r1=0,x1=0.0001"
                 + Environment.NewLine + Environment.NewLine;
-            }
-            else
-            {
-                // modelo
-                // new circuit.alimAFNU16 bus1=BMT155673172,basekv=13.8,pu=
-                return "new circuit.alim" + _par._alim
-                + " bus1=" + "BMT" + rs["CodPonAcopl"].ToString() // OBS: + ".1.2.3"
-                + ",basekv=" + rs["TenNom_kV"].ToString()
-                + ",pu=" + rs["TenOpe_pu"].ToString()
-                + ",r1=0,x1=0.0001"
-                + Environment.NewLine + Environment.NewLine;
-            }
+            } */
         }
 
         // funcao que cria a string do arquivo masterDSS
-        private static string CriaStringMasterDSS_ParteA(SqlDataReader rs)
+        private string CriaStringMasterDSS_ParteA()
         {
-            string linha = "";
-
-            // cabeca alim
-            string cabAlim = rs["CodPonAcopl"].ToString();
-
             // limpa
-            linha = "clear" + Environment.NewLine;
+            string linha = "clear" + Environment.NewLine;
 
             // new circuit
-            linha += CriaStrCircuit(rs);
+            linha += CriaStrCircuit();
 
             // curva de carga 
             //TODO NO momento o programa nao gera arquivo de curvas de carga
@@ -277,43 +326,6 @@ namespace ExportadorGeoPerdasDSS
                 linha += "Redirect " + _par._alim + "GeradorBT_" + AuxFunc.IntMes2strMes(_iMes) + ".dss" + Environment.NewLine;
             }
             return linha;
-        }
-
-        // obtem o 1 trecho do alimentador
-        private static string GetTrechoEnergyMeter(string pel)
-        {
-            string trecho = "";
-            using (SqlConnection conn = new SqlConnection(_connBuilder.ToString()))
-            {
-                conn.Open();
-                using (SqlCommand command = conn.CreateCommand())
-                {
-                    command.CommandText = "select CodSegmMT from " + _par._DBschema + "StoredSegmentoMT where CodBase=@codbase and CodAlim=@CodAlim and CodPonAcopl1=@CodPonAcopl1";
-                    command.Parameters.AddWithValue("@codbase", _par._codBase);
-                    command.Parameters.AddWithValue("@CodAlim", _par._alim);
-                    command.Parameters.AddWithValue("@CodPonAcopl1", pel);
-
-                    using (var rs = command.ExecuteReader())
-                    {
-                        //
-                        if (!rs.HasRows)
-                        {
-                            Console.Write("Nao encontrado trecho do Energymeter");
-                            return trecho;
-                        }
-
-                        rs.Read();
-
-                        trecho = rs["CodSegmMT"].ToString();
-                    }
-                }
-            }
-            return trecho;
-        }
-
-        internal void GravaEmArquivo()
-        {
-            throw new NotImplementedException();
         }
     }
 }

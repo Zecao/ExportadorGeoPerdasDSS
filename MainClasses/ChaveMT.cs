@@ -9,9 +9,9 @@ namespace ExportadorGeoPerdasDSS
     {
         // membros privados
         private static readonly string _chave = "ChavesMT.dss";
+        private static SqlConnectionStringBuilder _connBuilder;
         private StringBuilder _arqChaveMT;
         private readonly Param _par;
-        private static SqlConnectionStringBuilder _connBuilder;
         private readonly bool _criaDispProtecao;
 
         public ChaveMT(SqlConnectionStringBuilder connBuilder, Param par, bool criaDispProtecao)

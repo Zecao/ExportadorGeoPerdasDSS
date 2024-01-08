@@ -8,15 +8,13 @@ namespace ExportadorGeoPerdasDSS
     {
         // membros privados
         private static readonly string _segmentosBT = "SegmentosBT.dss";
-        private Param _par;
-        private readonly string _alim;
         private static SqlConnectionStringBuilder _connBuilder;
+        private readonly Param _par;
         private StringBuilder _arqSegmentoBT;
 
         public SegmentoBT(SqlConnectionStringBuilder connBuilder, Param par)
         {
             _par = par;
-            _alim = par._alim;
             _connBuilder = connBuilder;
         }
 
@@ -48,7 +46,7 @@ namespace ExportadorGeoPerdasDSS
                             + " from " + _par._DBschema + "StoredSegmentoBT "
                             + "where CodBase=@codbase and CodAlim=@CodAlim";
                         command.Parameters.AddWithValue("@codbase", _par._codBase);
-                        command.Parameters.AddWithValue("@CodAlim", _alim);
+                        command.Parameters.AddWithValue("@CodAlim", _par._alim);
                     }
 
                     using (var rs = command.ExecuteReader())
@@ -127,7 +125,7 @@ namespace ExportadorGeoPerdasDSS
 
         public string GetNomeArq()
         {
-            return _par._pathAlim + _alim + _segmentosBT;
+            return _par._pathAlim + _par._alim + _segmentosBT;
         }
 
         internal void GravaEmArquivo()

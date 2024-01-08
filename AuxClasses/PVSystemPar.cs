@@ -17,9 +17,22 @@ namespace AuxClasses
         _voltVarcurve =     -> "voltvar_c";  ///uses voltvar_0 to no voltvar
         */
 
-        public PVSystemPar(bool modelPVSystemsLV, bool gerIC, string invControlModeLV = "VOLTVAR", string varFollowInvLV = "False", string vvarCurve = "voltvar_c")
+        /* VarFollowInverter: Boolean variable which indicates that the reactive power does not respect the inverter status.
+        – When set to True, PVSystem’s reactive power will cease when the inverter status is OFF,
+        due to the power from PV array dropping below %cutout. The reactive power will begin
+        again when the power from PV array is above %cutin;
+        – When set to False, PVSystem will provide/absorb reactive power regardless of the status
+        of the inverter.*/
+
+        public PVSystemPar(bool modelPVSystems, bool gerIC, string invControlModeLV = "VOLTVAR", string varFollowInvLV = "False", string vvarCurve = "voltvar_c")
         {
-            _modelPVSystems = modelPVSystemsLV;
+            // se InvControl was choose, modelPVSystem must be true 
+            if (gerIC)
+            {
+                modelPVSystems = true;
+            }
+
+            _modelPVSystems = modelPVSystems;
             _geraInvControl = gerIC;
 
             // Optional parameters 

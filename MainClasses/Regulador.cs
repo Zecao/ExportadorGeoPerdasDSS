@@ -8,10 +8,10 @@ namespace ExportadorGeoPerdasDSS
     {
         // membros privados
         private static readonly string _reguladores = "Reguladores.dss";
+        private static SqlConnectionStringBuilder _connBuilder;
         private StringBuilder _arqReguladorMT;
         private Param _par;
         private readonly string _alim;
-        private static SqlConnectionStringBuilder _connBuilder;
 
         public Regulador(SqlConnectionStringBuilder connBuilder, Param par)
         {

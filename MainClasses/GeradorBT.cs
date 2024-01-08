@@ -6,13 +6,11 @@ namespace ExportadorGeoPerdasDSS
 {
     class GeradorBT
     {
-        // membros privador
         private static readonly string _geradorBT = "GeradorBT_";
-        private static int _iMes;
-
+        private static SqlConnectionStringBuilder _connBuilder;
+        private int _iMes;
         private StringBuilder _arqGeradorBT;
         private readonly Param _par;
-        private static SqlConnectionStringBuilder _connBuilder;
 
         public GeradorBT(SqlConnectionStringBuilder connBuilder, Param par, int iMes)
         {

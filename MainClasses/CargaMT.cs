@@ -9,10 +9,10 @@ namespace ExportadorGeoPerdasDSS
     {
         // membros privados
         private static readonly string _cargaMT = "CargaMT_";
-        private static int _iMes;
-        private static string _ano;
-        private readonly Param _par;
         private static SqlConnectionStringBuilder _connBuilder;
+        private int _iMes;
+        private string _ano;
+        private readonly Param _par;
         private StringBuilder _arqSegmentoBT;
         private readonly List<List<int>> _numDiasFeriadoXMes;
         private readonly Dictionary<string, double> _somaCurvaCargaDiariaPU;
